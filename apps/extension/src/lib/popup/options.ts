@@ -8,7 +8,8 @@ export function popupOptionsFromProfile(profile: Profile): PopupProfileOptions {
   }
   return {
     readingTags: profile.readingTags,
-    showSecondaryReadings: profile.showSecondaryReadings,
+    readingDisplay: profile.readingDisplay,
+    resultLayout: profile.resultLayout,
     fontScale: profile.popup.fontScale,
     theme: profile.popup.theme,
     customCss: profile.popup.customCss,

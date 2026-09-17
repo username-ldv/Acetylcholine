@@ -1,6 +1,6 @@
 import type { AceEntry } from '@acetylcholine/ace';
 import { describe, expect, it } from 'vitest';
-import { groupHits } from '../src/lookup/group.ts';
+import { groupHits, mergeGroupsByWord } from '../src/lookup/group.ts';
 import type { LookupHit } from '../src/lookup/types.ts';
 
 let nextId = 0;
@@ -84,19 +84,70 @@ describe('groupHits', () => {
     expect(groups[2]!.entries[0]!.entry.id).toBe(shortA.id);
   });
 
-  it('attaches entries without comparable readings to the first group, never merging senses', () => {
+  it('attaches entries whose reading systems are disjoint to the first group, never merging senses', () => {
     const du = entry(['读'], [['dú', ['pinyin']]]);
     const dou = entry(['读'], [['dòu', ['pinyin']]]);
     const canto = entry(['读'], [['duk6', ['jyutping']]]);
-    const bare = entry(['读'], []);
     const groups = groupHits(
-      [hit('a', du, '读'), hit('a', dou, '读'), hit('c', canto, '读'), hit('d', bare, '读')],
-      ['a', 'c', 'd'],
+      [hit('a', du, '读'), hit('a', dou, '读'), hit('c', canto, '读')],
+      ['a', 'c'],
     );
     expect(groups).toHaveLength(2);
-    expect(groups[0]!.entries.map((e) => e.entry.id)).toEqual([du.id, canto.id, bare.id]);
+    expect(groups[0]!.entries.map((e) => e.entry.id)).toEqual([du.id, canto.id]);
     expect(groups[1]!.entries.map((e) => e.entry.id)).toEqual([dou.id]);
     expect(groups[0]!.readings.map((r) => r.text)).toEqual(['dú', 'duk6']);
+  });
+
+  it('keeps entries without a reading in their own group, after the pronounced ones', () => {
+    const bareA = entry(['的'], []);
+    const di = entry(['的'], [['dì', ['pinyin']]]);
+    const bareB = entry(['的'], []);
+    const groups = groupHits(
+      [hit('a', bareA, '的'), hit('a', di, '的'), hit('b', bareB, '的')],
+      ['a', 'b'],
+    );
+    expect(groups.map((g) => g.entries.map((e) => e.entry.id))).toEqual([
+      [di.id],
+      [bareA.id, bareB.id],
+    ]);
+    expect(groups[1]!.readings).toEqual([]);
+  });
+
+  it('merges groups into one block per word, dictionary by dictionary, reading-less last', () => {
+    const aDi = entry(
+      ['的'],
+      [
+        ['dì', ['pinyin']],
+        ['ㄉㄧˋ', ['zhuyin']],
+      ],
+    );
+    const aDe = entry(['的'], [['de', ['pinyin']]]);
+    const bBare = entry(['的'], []);
+    const bDi = entry(['的'], [['dì', ['pinyin']]]);
+    const bDe = entry(['的'], [['de', ['pinyin']]]);
+    const groups = groupHits(
+      [
+        hit('b', bBare, '的'),
+        hit('b', bDi, '的'),
+        hit('b', bDe, '的'),
+        hit('a', aDi, '的'),
+        hit('a', aDe, '的'),
+      ],
+      ['a', 'b'],
+    );
+    expect(groups).toHaveLength(3);
+    const blocks = mergeGroupsByWord(groups, ['a', 'b']);
+    expect(blocks).toHaveLength(1);
+    const block = blocks[0]!;
+    expect(block.headwords).toEqual(['的']);
+    expect(block.readings.map((r) => r.text)).toEqual(['dì', 'ㄉㄧˋ', 'de']);
+    expect(block.dictionaries.map((d) => d.dictionary)).toEqual(['a', 'b']);
+    expect(block.dictionaries[0]!.entries.map((e) => e.entry.id)).toEqual([aDi.id, aDe.id]);
+    expect(block.dictionaries[1]!.entries.map((e) => e.entry.id)).toEqual([
+      bDi.id,
+      bDe.id,
+      bBare.id,
+    ]);
   });
 
   it('puts the scanned form first among the headwords', () => {

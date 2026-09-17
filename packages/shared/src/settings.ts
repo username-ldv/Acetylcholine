@@ -57,6 +57,12 @@ export const dictionaryPreferenceSchema = z.object({
 });
 export type DictionaryPreference = z.infer<typeof dictionaryPreferenceSchema>;
 
+export const readingDisplaySchema = z.enum(['primary', 'primary-secondary', 'all']);
+export type ReadingDisplay = z.infer<typeof readingDisplaySchema>;
+
+export const resultLayoutSchema = z.enum(['reading', 'dictionary']);
+export type ResultLayout = z.infer<typeof resultLayoutSchema>;
+
 export const profileSchema = z.object({
   id: z.string(),
   name: z.string().default('Default'),
@@ -72,8 +78,18 @@ export const profileSchema = z.object({
    * Empty = dictionary order, all readings shown.
    */
   readingTags: z.array(z.string()).default(['pinyin', 'zhuyin']),
-  /** Whether secondary readings (other systems) are shown in the popup header. */
-  showSecondaryReadings: z.boolean().default(true),
+  /**
+   * Which reading systems the popup shows: only the primary one, the primary large with the others
+   * small (default), or all of them alike. Reading-tagged content follows the same choice (`all`
+   * shows every system inline).
+   */
+  readingDisplay: readingDisplaySchema.default('primary-secondary'),
+  /**
+   * How results are arranged: one card per word + pronunciation with every dictionary inside
+   * (`reading`), or one block per word listing each dictionary's definitions with their readings
+   * (`dictionary`).
+   */
+  resultLayout: resultLayoutSchema.default('reading'),
   scanning: scanningSchema.default(() => scanningSchema.parse({})),
   popup: popupSchema.default(() => popupSchema.parse({})),
 });

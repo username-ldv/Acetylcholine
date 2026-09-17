@@ -70,8 +70,9 @@ its own entry), `--level 0-9`.
    ordering and details. Re-importing a file with the same id replaces the old copy.
 3. **Scanning:** trigger (hover / click), key to hold (Shift by default), scan length, delay,
    excluded sites and ignored elements.
-4. **Appearance:** popup theme and size, font scale, reading-system preference (e.g. zhuyin before
-   pinyin), custom CSS.
+4. **Appearance:** popup theme and size, font scale, result layout (by word and pronunciation, or
+   by dictionary with a reading badge per definition), which reading systems to show, reading-system
+   preference (e.g. zhuyin before pinyin), custom CSS.
 5. **Search:** look text up directly; results render exactly as in the popup.
 
 On any page: hold Shift and hover a word. The popup groups results by word + pronunciation, shows

@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Theme } from '@acetylcholine/shared';
+import type { ReadingDisplay, ResultLayout, Theme } from '@acetylcholine/shared';
 import { onMount } from 'svelte';
 import { Button } from '$lib/components/ui/button';
 import { Input } from '$lib/components/ui/input';
@@ -126,10 +126,54 @@ onMount(async () => {
         <Switch id="dict-titles" checked={popup.showDictionaryTitles} onCheckedChange={(v) => (popup.showDictionaryTitles = v)} />
         <Label for="dict-titles" class="font-normal">Show dictionary names</Label>
       </div>
-      <div class="flex items-center gap-3">
-        <Switch id="secondary-readings" checked={profile.showSecondaryReadings} onCheckedChange={(v) => (profile.showSecondaryReadings = v)} />
-        <Label for="secondary-readings" class="font-normal">Show secondary readings</Label>
-      </div>
+    </div>
+  </section>
+
+  <section class="grid gap-6 sm:grid-cols-2">
+    <div class="space-y-2">
+      <Label>Result layout</Label>
+      <RadioGroup.Root
+        value={profile.resultLayout}
+        onValueChange={(v) => (profile.resultLayout = v as ResultLayout)}
+      >
+        <div class="flex items-center gap-2">
+          <RadioGroup.Item value="reading" id="layout-reading" />
+          <Label for="layout-reading" class="font-normal">By word and pronunciation</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroup.Item value="dictionary" id="layout-dictionary" />
+          <Label for="layout-dictionary" class="font-normal">By dictionary</Label>
+        </div>
+      </RadioGroup.Root>
+      <p class="text-xs text-muted-foreground">
+        “By word and pronunciation” makes one card per pronunciation with every dictionary inside.
+        “By dictionary” makes one block per word and lists each dictionary's definitions in turn,
+        each preceded by its reading.
+      </p>
+    </div>
+    <div class="space-y-2">
+      <Label>Readings shown</Label>
+      <RadioGroup.Root
+        value={profile.readingDisplay}
+        onValueChange={(v) => (profile.readingDisplay = v as ReadingDisplay)}
+      >
+        <div class="flex items-center gap-2">
+          <RadioGroup.Item value="primary" id="readings-primary" />
+          <Label for="readings-primary" class="font-normal">Primary system only</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroup.Item value="primary-secondary" id="readings-primary-secondary" />
+          <Label for="readings-primary-secondary" class="font-normal">Primary large, others small</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroup.Item value="all" id="readings-all" />
+          <Label for="readings-all" class="font-normal">All systems alike</Label>
+        </div>
+      </RadioGroup.Root>
+      <p class="text-xs text-muted-foreground">
+        Applies to the header readings and to reading-tagged text inside definitions (“all” shows
+        every system inline).
+      </p>
     </div>
   </section>
 
@@ -149,7 +193,9 @@ onMount(async () => {
         {/each}
       </ol>
       <p class="text-xs text-muted-foreground">
-        The popup header shows the first system an entry has; content marked with another system is hidden.
+        The first system in this order that a dictionary offers is its primary system: it leads the
+        header and is the one kept in reading-tagged definition text. The other systems follow the
+        “Readings shown” choice above.
       </p>
     {/if}
   </section>

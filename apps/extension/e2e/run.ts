@@ -16,7 +16,15 @@ import { fileURLToPath } from 'node:url';
 import { chromium, type Frame, type Page } from 'playwright';
 
 // Extension-page global used inside `page.evaluate` callbacks.
-declare const chrome: { runtime: { sendMessage(message: unknown): Promise<unknown> } };
+declare const chrome: {
+  runtime: { sendMessage(message: unknown): Promise<unknown> };
+  storage: {
+    local: {
+      get(key: string): Promise<Record<string, unknown>>;
+      set(items: Record<string, unknown>): Promise<void>;
+    };
+  };
+};
 
 const here = dirname(fileURLToPath(import.meta.url));
 const extensionPath = resolve(here, '../.output/chrome-mv3');
@@ -237,6 +245,54 @@ try {
   report.hoverTraditional = await describeResults(frame2);
   log('hover 讀 →', JSON.stringify(report.hoverTraditional));
   await page.screenshot({ path: resolve(outDir, '5-hover-traditional.png') });
+
+  // ---- "by dictionary" layout on a word with several readings and a reading-less sense ---------
+  await page.mouse.click(10, 10);
+  await page.waitForSelector('#acetylcholine-popup', { state: 'hidden', timeout: 5_000 });
+  await options.evaluate(async () => {
+    // Nothing has been saved yet, so take the effective (default) settings from the background.
+    const settings = (await chrome.runtime.sendMessage({ type: 'getSettings' })) as {
+      profiles: { resultLayout: string }[];
+    };
+    settings.profiles[0]!.resultLayout = 'dictionary';
+    await chrome.storage.local.set({ settings });
+  });
+  await page.waitForTimeout(400);
+  const point3 = await page.evaluate(() => {
+    const walker = document.createTreeWalker(document.getElementById('t2')!, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode() as Text | null;
+    while (node) {
+      const i = node.data.indexOf('的');
+      if (i >= 0) {
+        const range = document.createRange();
+        range.setStart(node, i);
+        range.setEnd(node, i + 1);
+        const r = range.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
+      node = walker.nextNode() as Text | null;
+    }
+    throw new Error('的 not found on the page');
+  });
+  await page.keyboard.down('Shift');
+  await page.mouse.move(point3.x, point3.y, { steps: 3 });
+  await page.waitForSelector('#acetylcholine-popup', { state: 'visible', timeout: 15_000 });
+  const frame3 = await waitForFrame(page, /lookup\.html/);
+  await frame3.waitForSelector('.ace-word', { timeout: 15_000 });
+  await page.keyboard.up('Shift');
+  await page.waitForTimeout(400);
+  report.byDictionary = await frame3.$$eval('.ace-word', (els) =>
+    els.map((w) => ({
+      headword: w.querySelector('.ace-headword')?.textContent,
+      readings: [...w.querySelectorAll('.ace-group-header .ace-reading')].map((r) => r.textContent),
+      entries: [...w.querySelectorAll('.ace-entry')].map((e) => ({
+        dictionary: e.querySelector('.ace-dictionary-title')?.textContent ?? null,
+        reading: e.querySelector('.ace-entry-reading')?.textContent,
+      })),
+    })),
+  );
+  log('by dictionary 的 →', JSON.stringify(report.byDictionary));
+  await page.screenshot({ path: resolve(outDir, '6-by-dictionary.png') });
 
   writeFileSync(resolve(outDir, 'report.json'), JSON.stringify(report, null, 2));
   log('done; report in', resolve(outDir, 'report.json'));

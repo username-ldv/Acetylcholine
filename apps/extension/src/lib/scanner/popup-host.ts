@@ -112,7 +112,7 @@ export class PopupHost {
     set('border', '1px solid rgba(0,0,0,.25)');
     set('border-radius', '8px');
     set('box-shadow', '0 8px 24px rgba(0,0,0,.25)');
-    set('background', '#fff');
+    set('background', 'transparent');
     set('display', 'none');
     set('color-scheme', 'light dark');
     set('opacity', '1');

@@ -181,6 +181,12 @@ IndexedDB; the list, counts and storage line survive a page reload.
       each shadow root); the header shows the primary system large and the others small.
 - [x] Settings pages for what the popup needs: Scanning, Appearance (theme, size, font scale,
       reading-system order, custom CSS) and a Search page that renders results like the popup.
+- [x] Two result layouts (per profile): **by word and pronunciation** (one card per pronunciation,
+      every dictionary inside) and **by dictionary** (one block per word; each dictionary lists its
+      definitions in turn, each preceded by its reading badge). Entries without a reading form their
+      own "no reading" group / come last inside a dictionary. **Readings shown**: primary system
+      only, primary large + others small, or all systems alike (also drives reading-tagged content).
+      Dictionary name, reading badge and an inline dictionary root share one line.
 - [ ] Keyboard entry switching (Alt+↑/↓) — later.
 
 **Checkpoint (met, 2026-09-17):** Shift+hover on 读书 in a test page shows the popup with three
@@ -249,7 +255,7 @@ and images; 读 shows dòu and dú as separate entries.
 | 10 | Firefox target is **MV3, Firefox ≥ 128**. | Avoids maintaining an MV2 build. |
 | 11 | **Data rows carry a small dictionary number** (`d`) as the first key component. | One range delete per store removes a dictionary; no per-row dictionary index or string id. |
 | 12 | **Lookups run in the background service worker**; the popup reads assets and stylesheets from IndexedDB directly. | Chrome messaging is JSON-only (no Blobs); the LRU lives where it is shared by all tabs. |
-| 13 | **Grouping** = same headword and, within a shared reading system, the same reading; disjoint systems attach to the first matching group. | Keeps dú and dòu apart across five dictionaries without dictionary-specific rules. |
+| 13 | **Grouping** = same headword and, within a shared reading system, the same reading; disjoint systems attach to the first matching group; reading-less entries stay separate. | Keeps dú and dòu apart across five dictionaries without dictionary-specific rules. |
 | 14 | **E2E checks use Playwright with its Chromium build**, not branded Chrome. | Chrome 137+ ignores `--load-extension`. |
 
 ## 6. Open questions for the user
@@ -267,4 +273,5 @@ Open:
    iframe. A shadow-DOM fallback (weaker CSS isolation) could be added if this shows up in practice.
 6. Group display: when the same word has readings in different systems only (e.g. a Cantonese
    dictionary with jyutping), it attaches to the first group that shares a headword. Say if you
-   would rather see such entries in every group or in their own group.
+   would rather see such entries in every group or in their own group. (Entries with *no* reading
+   already form their own group, per your 2026-09-17 feedback.)

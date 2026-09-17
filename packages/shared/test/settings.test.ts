@@ -17,6 +17,8 @@ describe('settings', () => {
     expect(p.scanning.scanLength).toBe(16);
     expect(p.popup.width).toBe(480);
     expect(p.readingTags).toEqual(['pinyin', 'zhuyin']);
+    expect(p.readingDisplay).toBe('primary-secondary');
+    expect(p.resultLayout).toBe('reading');
   });
 
   it('fills missing fields on migrate and keeps valid values', () => {

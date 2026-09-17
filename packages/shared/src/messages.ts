@@ -7,7 +7,13 @@
  */
 
 import type { DictionaryInfo, LookupResult } from './lookup/types.ts';
-import type { Profile, ScanningOptions, Settings } from './settings.ts';
+import type {
+  Profile,
+  ReadingDisplay,
+  ResultLayout,
+  ScanningOptions,
+  Settings,
+} from './settings.ts';
 
 export interface LookupRequest {
   type: 'lookup';
@@ -56,7 +62,8 @@ export const POPUP_MESSAGE_PREFIX = 'acetylcholine:';
 /** What the popup needs from the profile to render. */
 export interface PopupProfileOptions {
   readingTags: string[];
-  showSecondaryReadings: boolean;
+  readingDisplay: ReadingDisplay;
+  resultLayout: ResultLayout;
   fontScale: number;
   theme: Profile['popup']['theme'];
   customCss: string;

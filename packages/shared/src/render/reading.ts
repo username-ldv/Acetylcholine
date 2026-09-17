@@ -1,4 +1,5 @@
 import type { AceReading } from '@acetylcholine/ace';
+import type { ReadingDisplay } from '../settings.ts';
 
 export interface ReadingSelection {
   /** Reading system chosen for display, or null when the readings carry no tags. */
@@ -43,6 +44,19 @@ export function primaryReadingTagFor(
 ): string | null {
   for (const tag of preferredTags) if (availableTags.includes(tag)) return tag;
   return availableTags[0] ?? null;
+}
+
+/**
+ * Reading system whose tagged content nodes stay visible under the given display mode: none
+ * (show everything) when the user wants all systems, else the primary one.
+ */
+export function contentReadingTag(
+  availableTags: readonly string[],
+  preferredTags: readonly string[],
+  display: ReadingDisplay,
+): string | null {
+  if (display === 'all') return null;
+  return primaryReadingTagFor(availableTags, preferredTags);
 }
 
 /**

@@ -14,12 +14,15 @@
   opacity: 0.7;
 }
 
-.ace-group {
-  padding: 0.5rem 0.75rem 0.25rem;
+/* One card per word + pronunciation ("reading" layout) or per word ("dictionary" layout). */
+.ace-group,
+.ace-word {
+  padding: 0.4rem 0.75rem 0.35rem;
   border-bottom: 1px solid color-mix(in oklch, currentColor 12%, transparent);
 }
 
-.ace-group:last-child {
+.ace-group:last-child,
+.ace-word:last-child {
   border-bottom: none;
 }
 
@@ -27,8 +30,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
-  margin-bottom: 0.35rem;
+  gap: 0.15rem 0.75rem;
+  margin-bottom: 0.2rem;
 }
 
 .ace-headwords {
@@ -69,8 +72,16 @@
   opacity: 0.6;
 }
 
+/* Entries without any reading are marked rather than silently merged. */
+.ace-reading-none {
+  font-size: 0.85em;
+  font-style: italic;
+  opacity: 0.55;
+}
+
+/* Compact: dictionary name, reading badge and an inline dictionary root share one line. */
 .ace-entry {
-  margin: 0.25rem 0 0.5rem;
+  margin: 0;
 }
 
 .ace-dictionary-title {
@@ -79,12 +90,31 @@
   font-weight: 500;
   letter-spacing: 0.02em;
   padding: 0.05rem 0.4rem;
-  margin-bottom: 0.2rem;
+  margin-right: 0.35rem;
   border-radius: 0.3rem;
   background: color-mix(in oklch, currentColor 10%, transparent);
   opacity: 0.85;
+  vertical-align: baseline;
 }
 
+/* Per-definition reading in the "dictionary" layout. */
+.ace-entry-reading {
+  display: inline-block;
+  font-size: 0.85em;
+  padding: 0 0.35rem;
+  margin-right: 0.35rem;
+  border-radius: 0.3rem;
+  border: 1px solid color-mix(in oklch, currentColor 25%, transparent);
+  color: color-mix(in oklch, currentColor 80%, #2563eb);
+  vertical-align: baseline;
+}
+
+.ace-entry-reading.ace-reading-none {
+  font-style: italic;
+  color: inherit;
+}
+
+/* The host and its wrappers create no boxes: an inline dictionary root flows after the badges. */
 .ace-dictionary-content {
-  padding-left: 0.15rem;
+  display: contents;
 }

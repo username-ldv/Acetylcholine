@@ -53,6 +53,23 @@ export interface LookupGroup {
   score: number;
 }
 
+/** One dictionary's entries inside a `WordBlock`, in the dictionary's own order (reading-less last). */
+export interface WordBlockDictionary {
+  dictionary: string;
+  entries: LookupEntry[];
+}
+
+/** Every entry for one matched word, arranged dictionary by dictionary ("by dictionary" layout). */
+export interface WordBlock {
+  matched: string;
+  length: number;
+  /** Union of headwords; the scanned form first. */
+  headwords: string[];
+  /** Union of readings across all entries. */
+  readings: AceReading[];
+  dictionaries: WordBlockDictionary[];
+}
+
 export interface LookupResult {
   /** Raw text that was scanned. */
   text: string;

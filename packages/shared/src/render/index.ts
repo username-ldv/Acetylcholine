@@ -27,9 +27,9 @@ export function renderEntryContent(blocks: readonly AceContent[], ctx: RenderCon
  * neutral inheritance for everything else. Dictionary CSS is appended after it.
  */
 export const DICTIONARY_BASE_CSS = `
-:host { display: block; }
+:host, .ace-content, .ace-structured, .ace-html { display: contents; }
 .ace-content { overflow-wrap: anywhere; }
-.ace-text { white-space: pre-wrap; }
+.ace-text { display: block; white-space: pre-wrap; }
 a { color: var(--ace-link, #2563eb); text-decoration: none; cursor: pointer; }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; }
