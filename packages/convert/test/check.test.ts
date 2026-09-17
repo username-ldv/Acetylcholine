@@ -15,7 +15,7 @@ async function makeZip(files: Record<string, string | object>): Promise<Blob> {
 const content = (reading: string) => [
   {
     type: 'structured-content',
-    content: ['gloss', { tag: 'span', content: reading, data: { 'reading-tag': 'pinyin' } }],
+    content: ['gloss', { tag: 'span', content: reading, data: { readingTag: 'pinyin' } }],
   },
 ];
 

@@ -40,12 +40,12 @@ const sc = (trad: string, simp: string | null, gloss: string, altReading?: [stri
                 {
                   tag: 'span',
                   content: altReading[1],
-                  data: { moedict: 'alt-reading-content', 'reading-tag': 'zhuyin' },
+                  data: { moedict: 'alt-reading-content', readingTag: 'zhuyin' },
                 },
                 {
                   tag: 'span',
                   content: altReading[0],
-                  data: { moedict: 'alt-reading-content', 'reading-tag': 'pinyin' },
+                  data: { moedict: 'alt-reading-content', readingTag: 'pinyin' },
                 },
               ],
               data: { moedict: 'alt-reading-parent' },

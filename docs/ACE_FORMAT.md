@@ -168,10 +168,14 @@ that follow these conventions get the best results.
    dictionaries merge only rows with identical headword set and content.
 2. **Identical content across editions.** A pinyin edition and a zhuyin edition should differ only
    in the reading field. Readings that appear *inside* the content are emitted for both systems,
-   each in its own node tagged `data: { "reading-tag": "pinyin" }` / `"zhuyin"`; the edition's
+   each in its own node tagged `data: { "readingTag": "pinyin" }` / `"zhuyin"`; the edition's
    `styles.css` hides the other system with `[data-sc-reading-tag="zhuyin"] { display: none }`.
    The importer strips every CSS rule that targets `data-sc-reading-tag`; the `.ace` renderer shows
    the nodes matching the profile's primary reading tag instead.
+
+   Structured-content `data` keys must be camelCase: Yomitan (and the `.ace` renderer) assign them
+   through `element.dataset` as `sc<Key>`, which the DOM exposes as `data-sc-<kebab-case>`. A key
+   containing a hyphen is rejected by the DOM and silently dropped.
 3. **No empty terms.** Rows whose term is empty are skipped (with a warning). When the
    `--variant-data-values` option is given, a headword can be recovered from marked content.
 4. **Every lookup form is a row.** If a word should be found under a variant spelling, emit a row

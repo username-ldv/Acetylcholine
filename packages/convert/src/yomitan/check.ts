@@ -78,7 +78,7 @@ export async function checkYomitanEditions(sources: ConvertSource[]): Promise<Yo
           const seq = typeof row[6] === 'number' ? row[6] : -1;
           seqCounts.set(seq, (seqCounts.get(seq) ?? 0) + 1);
           const json = JSON.stringify(row[5]);
-          if (json.includes('"reading-tag"')) rowsWithReadingTag++;
+          if (json.includes('"readingTag"')) rowsWithReadingTag++;
           terms.push(term);
           sequences.push(seq);
           contents.push(hash64(json));
