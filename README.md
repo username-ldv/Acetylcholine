@@ -44,6 +44,12 @@ bun run ext:build:firefox   # → apps/extension/.output/firefox-mv3
 Load the unpacked build from `apps/extension/.output/<browser>` (Chrome: `chrome://extensions`
 → Developer mode → Load unpacked; Firefox: `about:debugging` → Load Temporary Add-on).
 
+**Dev mode.** `bun run ext:dev` starts a Vite dev server on `127.0.0.1:3000` and writes
+`apps/extension/.output/chrome-mv3-dev`; load that folder as an unpacked extension (WXT does not
+open a browser by itself). Extension pages then load from the dev server with HMR, and content
+scripts / the background reload on change. `node apps/extension/e2e/dev-smoke.ts` checks a running
+dev server end to end (options page, one import, a hover).
+
 ## Converting dictionaries
 
 ```sh

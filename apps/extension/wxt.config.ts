@@ -9,6 +9,18 @@ export default defineConfig({
   alias: {
     $lib: 'src/lib',
   },
+  dev: {
+    // Bind to IPv4 loopback explicitly: Node resolves `localhost` to ::1 only, and the extension
+    // pages then cannot reach the dev server (ERR_CONNECTION_REFUSED).
+    server: { host: '127.0.0.1', port: 3000 },
+  },
+  svelte: {
+    vite: {
+      // Serve Svelte libraries (bits-ui, @lucide/svelte) through the Svelte plugin instead of
+      // esbuild pre-bundling: WXT's dev server has no `.svelte` loader in the optimizer.
+      prebundleSvelteLibraries: false,
+    },
+  },
   manifest: {
     name: 'Acetylcholine',
     description:
