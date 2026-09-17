@@ -1,0 +1,23 @@
+{
+  "name": "@acetylcholine/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The `ace` command line tool: convert dictionaries to .ace, inspect and query them.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "ace": "./bin/ace.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "ace": "bun run src/main.ts"
+  },
+  "dependencies": {
+    "@acetylcholine/ace": "workspace:*",
+    "@acetylcholine/convert": "workspace:*",
+    "@zip.js/zip.js": "^2.15.0",
+    "citty": "^0.2.2",
+    "consola": "^3.4.2"
+  }
+}

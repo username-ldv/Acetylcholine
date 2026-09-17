@@ -1,0 +1,19 @@
+{
+  "name": "@acetylcholine/convert",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Converters from Yomitan and MDX dictionaries into the .ace format.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@acetylcholine/ace": "workspace:*",
+    "@zip.js/zip.js": "^2.15.0"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@acetylcholine/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Acetylcholine browser extension (Chromium + Firefox, Manifest V3).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "typecheck": "wxt prepare && svelte-check --tsconfig ./tsconfig.json",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@acetylcholine/ace": "workspace:*",
+    "@acetylcholine/shared": "workspace:*",
+    "@zip.js/zip.js": "^2.15.0",
+    "clsx": "^2.1.1",
+    "idb": "^8.0.3",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@internationalized/date": "^3.12.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@wxt-dev/module-svelte": "^2.0.5",
+    "bits-ui": "^2.18.0",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "tailwind-variants": "^3.3.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.3.6",
+    "wxt": "^0.21.4"
+  }
+}

@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+.bun/
+
+# build outputs
+dist/
+.output/
+.wxt/
+*.tsbuildinfo
+
+# converted dictionaries / large local data
+example-dictionaries/
+*.ace
+!packages/**/test/fixtures/**/*.ace
+
+# env / editor / os
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# logs
+*.log
+npm-debug.log*
