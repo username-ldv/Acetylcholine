@@ -13,11 +13,13 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "typecheck": "wxt prepare && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
     "@acetylcholine/ace": "workspace:*",
     "@acetylcholine/shared": "workspace:*",
+    "@lucide/svelte": "^1.47.0",
     "@zip.js/zip.js": "^2.15.0",
     "clsx": "^2.1.1",
     "idb": "^8.0.3",

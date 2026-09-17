@@ -140,27 +140,55 @@ character (𥥷, 𬶧, 𫗥, 𫐌 …) whose surrogate pair straddles a chunk bo
 Both exporters now hand JSZip UTF-8 bytes instead. `ace check <pinyin.zip> <zhuyin.zip>` verifies
 all of these conventions for any edition pair.
 
-### Phase 2 — Extension database + import UI  `[ ]`
-- [ ] IndexedDB schema (`idb`), import Worker with streaming progress, delete, re-import.
-- [ ] Settings → Dictionaries: drag-and-drop `.ace`, list with enable/disable, reorder, details,
-      storage usage, delete.
-- [ ] Asset serving: `assets` Blobs → object URLs on demand, cache per popup session.
+### Phase 2 — Extension database + import UI  `[x]`
+- [x] IndexedDB schema (`idb`): `dictionaries` + seven data stores keyed `[d, …]` where `d` is a
+      small per-dictionary integer, so a dictionary is deleted with one key-range delete per store
+      and no row needs a dictionary index. `keys.key`, `meta.term`, `kanji.character` indexes.
+- [x] Import Worker (`entrypoints/import-worker.ts`, a WXT unlisted script): streams the `.ace`
+      zip one chunk at a time, writes bounded batches (4 096 entries / 16 384 keys per
+      transaction), reports per-stage progress, supports cancel (rolls back), replaces an existing
+      copy with the same manifest id, and rejects non-`.ace` files.
+- [x] Settings → Dictionaries: drag-and-drop / file picker, import queue with progress and cancel,
+      installed list with enable switch, ↑/↓ ordering, details panel, delete with confirmation,
+      per-dictionary and total size, `navigator.storage.estimate()` usage.
+- [x] Asset serving: `assets` Blobs → object URLs on demand (`AssetUrlCache`, per page).
+- [x] `fake-indexeddb` tests for import, lookup, re-import, delete and abort.
 
-**Checkpoint:** import all 10 dictionaries; DB stats visible; import survives page reload.
+**Checkpoint (met, 2026-09-17, Playwright + Chromium 153, `apps/extension/e2e/run.ts`):** all 5
+sample `.ace` files (455 572 entries, 653 364 keys, 1 334 assets, 88 MiB of files) imported in
+52–67 s sequentially over two runs (largest, 重編國語辭典修訂本: 20–27 s) into ≈ 260 MiB of
+IndexedDB; the list, counts and storage line survive a page reload.
 
-### Phase 3 — Lookup engine + popup MVP  `[ ]`
-- [ ] Background lookup service (prefix candidates, enabled-dictionary filter, grouping, LRU).
-- [ ] Content script scanner: modifier key, `caretPositionFromPoint`, text extraction across nodes,
-      match highlight, popup positioning (above/below, viewport clamping), close on scroll/click-out.
-- [ ] Popup iframe app: headword + readings header (multi-reading disambiguation), dictionary
-      sections with names, structured-content renderer, per-dictionary shadow roots + CSS,
-      internal `?query=` links → nested lookup, images from assets, dark/light theme.
-- [ ] Reading-tag visibility: content nodes carrying `data-sc-reading-tag` show only for the
-      profile's primary reading system (all systems when no preference), per `ACE_FORMAT.md`.
-- [ ] Keyboard: Esc to close, Alt+↑/↓ to switch entries (later).
+### Phase 3 — Lookup engine + popup MVP  `[x]`
+- [x] Background lookup service: language-adapter candidates (all prefixes up to `scanLength`,
+      code-point aware), one read-only transaction (`getAll` per candidate on the `key` index +
+      `get` per entry), enabled-dictionary filter in profile order, grouping by
+      (headword ∩ reading) with the scanned form first, 256-entry LRU, invalidated on settings and
+      dictionary changes.
+- [x] Content script scanner: modifier key (Shift/Ctrl/Alt/none) + hover or click trigger,
+      `caretPositionFromPoint` with glyph-box check (no scans over blank space), text extraction
+      across inline nodes up to the block boundary, CSS Custom Highlight API (selection fallback),
+      popup above/below with viewport clamping and re-positioning on scroll/resize, close on
+      click-outside / Esc / (optionally) scroll, excluded sites and ignored selectors.
+- [x] Popup iframe app (`lookup.html`): headword + variants + primary/secondary readings per
+      group, dictionary titles, structured-content renderer producing Yomitan-compatible
+      `data-sc-*` markup, per-dictionary shadow roots with the dictionary's `styles.css`,
+      `?query=` / `ace-lookup:` links and hover-inside-popup → nested lookups with a history
+      stack (← / Backspace), images from assets, light/dark/auto theme, custom CSS, font scale,
+      content-height reporting so the frame shrinks to fit.
+- [x] Reading-tag visibility: nodes tagged `data-sc-reading-tag` are shown only for the profile's
+      primary reading system (`[data-sc-reading-tag]:not([…="pinyin"]) { display:none }` inside
+      each shadow root); the header shows the primary system large and the others small.
+- [x] Settings pages for what the popup needs: Scanning, Appearance (theme, size, font scale,
+      reading-system order, custom CSS) and a Search page that renders results like the popup.
+- [ ] Keyboard entry switching (Alt+↑/↓) — later.
 
-**Checkpoint:** Shift+hover on 读 in a page shows the screenshot-equivalent popup across all
-enabled dictionaries in well under 100 ms warm.
+**Checkpoint (met, 2026-09-17):** Shift+hover on 读书 in a test page shows the popup with three
+groups (读书 dúshū, 读 dú, 读 dòu), each with all five dictionaries and their original CSS;
+first popup (iframe creation included) in 107–196 ms over two runs; uncached lookups 0.5–4.4 ms in
+the service worker (round trip 1–5.5 ms), cached ≈ 0 ms; nested lookup of 读书人 from a definition
+link works; hovering 讀 inside an `<i>` shows 讀 first with 读 as variant; click-outside closes.
+Firefox MV3 builds; not yet exercised end-to-end.
 
 ### Phase 4 — MDX converter  `[ ]`
 - [ ] Input A: `mdict-utils` text export folder (`*.mdx.txt` + `mdd/`). Input B: raw `.mdx`/`.mdd`
@@ -219,11 +247,24 @@ and images; 读 shows dòu and dú as separate entries.
 | 8 | **Chinese first**, adapters designed for more languages; Japanese deinflection later. | All sample data is Chinese. |
 | 9 | Converter is a **separate CLI** but its core is browser-safe so in-extension conversion can be added later. | Matches the requested workflow without closing the door. |
 | 10 | Firefox target is **MV3, Firefox ≥ 128**. | Avoids maintaining an MV2 build. |
+| 11 | **Data rows carry a small dictionary number** (`d`) as the first key component. | One range delete per store removes a dictionary; no per-row dictionary index or string id. |
+| 12 | **Lookups run in the background service worker**; the popup reads assets and stylesheets from IndexedDB directly. | Chrome messaging is JSON-only (no Blobs); the LRU lives where it is shared by all tabs. |
+| 13 | **Grouping** = same headword and, within a shared reading system, the same reading; disjoint systems attach to the first matching group. | Keeps dú and dòu apart across five dictionaries without dictionary-specific rules. |
+| 14 | **E2E checks use Playwright with its Chromium build**, not branded Chrome. | Chrome 137+ ignores `--load-extension`. |
 
 ## 6. Open questions for the user
 
-1. Any languages besides Chinese needed in the first usable version (Japanese, Korean, European)?
-2. Should the extension also accept Yomitan zips directly in the import UI (converting on the fly),
-   or is the CLI-only path fine for now?
-3. Distribution target: unpacked/dev builds only, or should store packaging be part of Phase 8?
-4. Is MIT acceptable, or do you prefer another license?
+Answered 2026-09-17:
+
+1. Languages besides Chinese in the first usable version: **no** — Chinese only; others later.
+2. Yomitan zips directly in the import UI: **not now** — CLI conversion is the path.
+3. Distribution: **dev / unpacked builds only** for now; store packaging stays in Phase 8.
+4. License: **MIT** is fine.
+
+Open:
+
+5. Popup on CSP-strict pages: sites whose `frame-src` blocks `chrome-extension:` cannot host the
+   iframe. A shadow-DOM fallback (weaker CSS isolation) could be added if this shows up in practice.
+6. Group display: when the same word has readings in different systems only (e.g. a Cantonese
+   dictionary with jyutping), it attaches to the first group that shares a headword. Say if you
+   would rather see such entries in every group or in their own group.

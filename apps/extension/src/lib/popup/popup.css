@@ -1,0 +1,90 @@
+/* Result rendering shared by the lookup popup and the settings search. */
+
+.ace-results {
+  --ace-link: #2563eb;
+  line-height: 1.45;
+}
+
+.dark .ace-results {
+  --ace-link: #7dd3fc;
+}
+
+.ace-empty {
+  padding: 0.75rem 1rem;
+  opacity: 0.7;
+}
+
+.ace-group {
+  padding: 0.5rem 0.75rem 0.25rem;
+  border-bottom: 1px solid color-mix(in oklch, currentColor 12%, transparent);
+}
+
+.ace-group:last-child {
+  border-bottom: none;
+}
+
+.ace-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.ace-headwords {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ace-headword {
+  font-size: 1.7em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ace-variant {
+  font-size: 1.2em;
+  opacity: 0.7;
+}
+
+.ace-readings {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.ace-reading {
+  font-size: 1.05em;
+  color: color-mix(in oklch, currentColor 80%, #2563eb);
+}
+
+.ace-reading-sep {
+  opacity: 0.5;
+}
+
+.ace-reading-secondary {
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+.ace-entry {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.ace-dictionary-title {
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.05rem 0.4rem;
+  margin-bottom: 0.2rem;
+  border-radius: 0.3rem;
+  background: color-mix(in oklch, currentColor 10%, transparent);
+  opacity: 0.85;
+}
+
+.ace-dictionary-content {
+  padding-left: 0.15rem;
+}
