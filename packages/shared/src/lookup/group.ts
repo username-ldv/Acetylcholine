@@ -81,7 +81,8 @@ export function groupHits(
  * Merges groups into one block per matched word for the "by dictionary" layout: headwords and
  * readings are unioned, and entries are bucketed per dictionary in dictionary order. Inside a
  * dictionary, entries with a reading come first (in the dictionary's own order), reading-less
- * ones last.
+ * ones last. `pronunciations` counts the reading-bearing groups that were merged, i.e. how many
+ * distinct pronunciations the word has across all dictionaries.
  */
 export function mergeGroupsByWord(
   groups: readonly LookupGroup[],
@@ -103,6 +104,7 @@ export function mergeGroupsByWord(
         length: g.length,
         headwords: [],
         readings: [],
+        pronunciations: 0,
         dictionaries: [],
       };
       byMatched.set(key, block);
@@ -110,6 +112,7 @@ export function mergeGroupsByWord(
       seenEntries.set(block, new Set());
     }
     const seen = seenEntries.get(block)!;
+    if (g.readings.length > 0) block.pronunciations++;
     for (const h of g.headwords) if (!block.headwords.includes(h)) block.headwords.push(h);
     for (const r of g.readings) mergeReadingInto(block.readings, r);
     for (const e of g.entries) {

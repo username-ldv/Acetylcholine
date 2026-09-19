@@ -294,6 +294,97 @@ try {
   log('by dictionary 的 →', JSON.stringify(report.byDictionary));
   await page.screenshot({ path: resolve(outDir, '6-by-dictionary.png') });
 
+  // ---- MDX dictionaries: 读 in the "by dictionary" layout (HTML content, CSS, images, fonts) ----
+  await page.mouse.click(10, 10);
+  await page.waitForSelector('#acetylcholine-popup', { state: 'hidden', timeout: 5_000 });
+  await page.keyboard.down('Shift');
+  await page.mouse.move(point.x + 30, point.y + 30);
+  await page.mouse.move(point.x, point.y, { steps: 3 });
+  await page.waitForSelector('#acetylcholine-popup', { state: 'visible', timeout: 15_000 });
+  const frame4 = await waitForFrame(page, /lookup\.html/);
+  await frame4.waitForSelector('.ace-word', { timeout: 15_000 });
+  await page.keyboard.up('Shift');
+  await page.waitForTimeout(1500); // fonts + images from IndexedDB
+  report.mdx = await frame4.evaluate(() => {
+    const words = [...document.querySelectorAll('.ace-word')].map((w) => ({
+      headword: w.querySelector('.ace-headword')?.textContent,
+      entries: [...w.querySelectorAll('.ace-entry')].map((e) => {
+        const host = e.querySelector('.ace-dictionary-content');
+        const shadow = host?.shadowRoot ?? null;
+        const html = shadow?.querySelector('.ace-html');
+        const hw = shadow?.querySelector('hw, x-hw');
+        return {
+          dictionary:
+            e.querySelector('.ace-dictionary-title')?.textContent ??
+            host?.getAttribute('data-dictionary') ??
+            null,
+          reading: e.querySelector('.ace-entry-reading')?.textContent ?? null,
+          html: html !== null && html !== undefined,
+          chars: html?.textContent?.length ?? 0,
+          images: shadow ? shadow.querySelectorAll('img[src^="blob:"]').length : 0,
+          links: shadow ? shadow.querySelectorAll('a[data-ace-lookup]').length : 0,
+          headerFont: hw ? getComputedStyle(hw).fontFamily : null,
+          headerDisplay: hw ? getComputedStyle(hw).display : null,
+        };
+      }),
+    }));
+    return {
+      words,
+      fontStyles: document.querySelectorAll('style[data-ace-fonts]').length,
+      fontsLoaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family),
+    };
+  });
+  log('mdx 读 →', JSON.stringify(report.mdx));
+  await page.screenshot({ path: resolve(outDir, '7-mdx.png') });
+
+  // 规范词典's 用法说明 card: the dictionary's JS is never run; the recipe made it a declarative toggle.
+  report.mdxToggle = await frame4.evaluate(() => {
+    for (const host of document.querySelectorAll('.ace-dictionary-content')) {
+      const toggle = host.shadowRoot?.querySelector('[data-ace-toggle]') as HTMLElement | null;
+      if (!toggle) continue;
+      const box = toggle.parentElement;
+      const note = box?.querySelector('.t-note');
+      const before = note ? getComputedStyle(note).display : null;
+      toggle.click();
+      const after = note ? getComputedStyle(note).display : null;
+      return {
+        label: toggle.textContent,
+        active: box?.classList.contains('is-active') ?? false,
+        noteDisplay: { before, after },
+        senseNumberColor: (() => {
+          const sn = host.shadowRoot?.querySelector('x-sn');
+          return sn ? getComputedStyle(sn).color : null;
+        })(),
+      };
+    }
+    return null;
+  });
+  log('mdx toggle →', JSON.stringify(report.mdxToggle));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: resolve(outDir, '8-mdx-toggle.png') });
+
+  // Dark scheme: the popup (theme "auto") follows it, mirrors it on the iframe element, and the
+  // recipe's light-dark() colours switch inside the dictionary's shadow root.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.waitForTimeout(500);
+  report.mdxDark = {
+    frameColorScheme: await page.$eval('#acetylcholine-popup', (el) => el.style.colorScheme),
+    ...(await frame4.evaluate(() => {
+      const shadow = document.querySelector('.ace-dictionary-content')?.shadowRoot ?? null;
+      const sn = shadow?.querySelector('x-sn');
+      const ex = shadow?.querySelector('x-ex');
+      return {
+        dark: document.documentElement.classList.contains('dark'),
+        rootColorScheme: document.documentElement.style.colorScheme,
+        senseNumberColor: sn ? getComputedStyle(sn).color : null,
+        exampleColor: ex ? getComputedStyle(ex).color : null,
+      };
+    })),
+  };
+  log('mdx dark →', JSON.stringify(report.mdxDark));
+  await page.screenshot({ path: resolve(outDir, '9-mdx-dark.png') });
+  await page.emulateMedia({ colorScheme: null });
+
   writeFileSync(resolve(outDir, 'report.json'), JSON.stringify(report, null, 2));
   log('done; report in', resolve(outDir, 'report.json'));
 } finally {

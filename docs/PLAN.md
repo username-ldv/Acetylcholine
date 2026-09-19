@@ -186,7 +186,9 @@ IndexedDB; the list, counts and storage line survive a page reload.
       definitions in turn, each preceded by its reading badge). Entries without a reading form their
       own "no reading" group / come last inside a dictionary. **Readings shown**: primary system
       only, primary large + others small, or all systems alike (also drives reading-tagged content).
-      Dictionary name, reading badge and an inline dictionary root share one line.
+      Dictionary name, reading badge and an inline dictionary root share one line. The reading
+      badge is only shown when the word has two or more pronunciations across the enabled
+      dictionaries (2026-09-19); with one pronunciation it would just repeat the header.
 - [ ] Keyboard entry switching (Alt+↑/↓) — later.
 
 **Checkpoint (met, 2026-09-17):** Shift+hover on 读书 in a test page shows the popup with three
@@ -196,19 +198,71 @@ the service worker (round trip 1–5.5 ms), cached ≈ 0 ms; nested lookup of �
 link works; hovering 讀 inside an `<i>` shows 讀 first with 读 as variant; click-outside closes.
 Firefox MV3 builds; not yet exercised end-to-end.
 
-### Phase 4 — MDX converter  `[ ]`
-- [ ] Input A: `mdict-utils` text export folder (`*.mdx.txt` + `mdd/`). Input B: raw `.mdx`/`.mdd`
-      via `js-mdict@6` (MIT; v7 is AGPL and is avoided).
-- [ ] `@@@LINK=` → alias keys. HTML sanitization (strip `<script>`, `<link>`, inline handlers),
-      `entry://` → internal links, asset references → `ace-asset:` scheme, CSS hoisted into
-      `styles.css` with `url()` rewriting, fonts kept as assets.
-- [ ] Recipes: per-dictionary rules to split a record into readings/entries and extract the reading
-      (`<entry>`+`<pinyin>` for 现汉7, `<hr>`+`<x-pr>` for 规范词典), with a generic fallback
-      (one entry, no reading). Recipes are JSON and user-extensible.
-- [ ] HTML content renderer in the popup (DOMPurify profile, asset resolution, link rewriting).
+### Phase 4 — MDX converter  `[x]`
+- [x] Input A: `mdict-utils` text export folder (`mdx/*.mdx.txt` + `mdd/` + sidecar CSS/fonts;
+      title/description from the `.title.html` / `.description.html` files), streamed line by
+      line. Input B: raw `.mdx` (+ `.mdd`, numbered parts, sidecars) via `js-mdict@6` (MIT; v7 is
+      AGPL and is avoided), Node-only in the CLI. Both feed one environment-agnostic `MdxSource`
+      (records + resource store) into `convertMdx` in `@acetylcholine/convert`.
+- [x] `@@@LINK=` → alias keys to every entry of the (transitively resolved) target, skipped when
+      the text already reaches the entry as headword/variant. HTML handled with htmlparser2 /
+      domhandler / css-select (no DOM needed): `<script>`, `<iframe>`, … and `on*` attributes
+      dropped, `javascript:` URLs removed, `entry://X` → `ace-lookup:X`, `src`/`href`/`url()`
+      → `ace-asset:<name>` (exact, case-insensitive and base-name matching against the resource
+      store), `<link>`ed stylesheets and `<style>` blocks hoisted once into `styles.css` with
+      `url()` rewriting and `html`/`body` selectors mapped to `.ace-html`; only referenced assets
+      (images, fonts) are bundled.
+- [x] Recipes (`packages/convert/src/mdx/recipe.ts`, zod-validated JSON): `container`, `split`
+      (`each` element or `separator` element), `bodyStart` (header region), `reading` (selector,
+      attribute, regex replacements, split for equivalent readings such as `xún 又 yīngxún`),
+      `variants` (selector or header text, pattern, split, marker stripping), `remove`, and
+      `detect` patterns for auto-detection. Built-ins `hanyu7` and `guifan2`, generic fallback
+      (one entry per record, no reading). `ace recipes [name]` lists / prints them;
+      `ace convert … --recipe <name|file.json>` overrides detection. Reading tag auto-detected.
+- [x] Popup: `html` blocks render through the existing DOMPurify renderer; attributes the content
+      uses (`<p indent="1">`, `<a type="see">`) are allow-listed by name (never `on*`, `srcdoc`,
+      …); `ace-asset:` urls inside dictionary CSS are resolved to object URLs before injection
+      and `@font-face` rules are hoisted to the popup document once per dictionary (fonts inside a
+      shadow tree are not reliable). The CSS walker (`transformCssRules`, `rewriteCssUrls`,
+      `extractFontFaces`) lives in `@acetylcholine/ace` and is shared by converter and renderer.
+- [x] Dictionary JavaScript is never run: MV3 forbids dynamic code in extension pages and the
+      content is untrusted. Recipes instead declare `interactions` (a click on `selector` toggles
+      `toggleClass` on `self` / `parent` / the closest matching ancestor), emitted as
+      `data-ace-toggle` attributes and handled by a delegated click handler in the popup;
+      `guifan2` reproduces its `toggle_active(this)` 用法说明 card that way. Recipes can also append
+      `css` after the dictionary's sheet, e.g. `light-dark()` colours for sheets that hard-code
+      black text; the popup sets `color-scheme` from its theme (so `light-dark()` follows it) and
+      mirrors the resolved scheme on the iframe element (so `prefers-color-scheme` rules in
+      dictionary CSS follow the popup theme, not the OS). `--derive-zhuyin` adds zhuyin readings
+      derived from pinyin with `pinyin-to-zhuyin` (MIT, the package behind the Yomitan exports),
+      skipping Latin abbreviations such as `AA zhì` and half-converted results (2026-09-19).
 
-**Checkpoint:** both sample MDX dictionaries convert, import, and render with their original CSS
-and images; 读 shows dòu and dú as separate entries.
+**Checkpoint (met, 2026-09-19):**
+
+| MDX dictionary | input | records | `@@@LINK` | `.ace` entries (with reading) | keys | assets | size | time |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 现代汉语词典 (第7版) | text export | 72,239 | 4,786 | 70,115 (69,910) | 76,246 | 164 (161 PNG + 2 TTF + 2 WOFF, 30 MiB) | 32.4 MiB | 2.4 s |
+| 现代汉语词典 (第7版) | raw `.mdx` + `.mdd` | 72,239 | 4,786 | 70,115 (69,910) | 76,246 | 164 | 32.5 MiB | 12.6 s |
+| 现代汉语规范词典 (第2版) | text export | 72,738 | 798 | 73,872 (73,759) | 78,336 | 0 (images are inline `data:` URIs) | 8.5 MiB | 2.7 s |
+| 现代汉语规范词典 (第2版) | raw `.mdx` + `.mdd` | 72,738 | 798 | 73,871 (73,758) | 78,335 | 0 | 8.6 MiB | 12.0 s |
+
+With `--derive-zhuyin` (the files used below): 69,780 (现汉) and 73,612 (规范词典) zhuyin readings
+added, 32.9 MiB / 9.0 MiB, 5.0 s / 5.8 s. Both recipes are auto-detected; every link resolves
+(in 现汉, 5,248 `@@@LINK` keys such as 讀 already reach their entry as variants and add no alias).
+Raw and text inputs produce identical key sets; the one-entry difference for 规范词典 comes from
+the source files themselves (the raw record for 干 wraps one 另见 line in `<dt>`, the text export
+does not). `ace inspect --validate` passes for both files. `ace lookup … 读` prints two entries
+(dòu / dú) with 读 | 讀 headwords in each dictionary; 讀 resolves through the variant key,
+㑳 / 㓦划 through alias keys, 㖊 carries both `xún` and `yīngxún`. Raw-`.mdx` conversion is slower
+because js-mdict re-inflates the record block for every record.
+
+End-to-end (Playwright + Chromium, `apps/extension/e2e/run.ts`, all 7 `.ace` files = 129 MiB):
+import 92.7 s total (规范词典 MDX 6.8 s, 现汉 MDX 25.8 s including 30 MiB of fonts and images);
+search and Shift+hover on 读书 show every group with all 7 dictionaries; the MDX entries render
+as `.ace-html` inside their shadow roots with the original CSS applied (`hw` is `display: block`
+in Heiti), the dictionary's Heiti and Songti fonts load from the bundled assets, `entry://` links
+work as nested lookups (12 in 读's 词语 list), and in the by-dictionary layout 读 shows the dòu / dú
+badges while 读书 (one pronunciation) shows none. The 规范词典 用法说明 card, a declarative toggle standing in for the dictionary's JavaScript, opens on click (note display none → block). With a dark colour scheme emulated, the iframe element mirrors `color-scheme: dark`, the popup switches to its dark theme, the sense numbers that the sheet paints `#000` inherit the light text colour, and the recipe's `light-dark()` colours take their dark branch.
 
 ### Phase 5 — Settings depth  `[ ]`
 - [ ] Profiles: create/rename/delete/duplicate, per-profile language, dictionaries + order,
@@ -257,6 +311,10 @@ and images; 读 shows dòu and dú as separate entries.
 | 12 | **Lookups run in the background service worker**; the popup reads assets and stylesheets from IndexedDB directly. | Chrome messaging is JSON-only (no Blobs); the LRU lives where it is shared by all tabs. |
 | 13 | **Grouping** = same headword and, within a shared reading system, the same reading; disjoint systems attach to the first matching group; reading-less entries stay separate. | Keeps dú and dòu apart across five dictionaries without dictionary-specific rules. |
 | 14 | **E2E checks use Playwright with its Chromium build**, not branded Chrome. | Chrome 137+ ignores `--load-extension`. |
+| 15 | **MDX structure comes from JSON recipes** (selectors + regexes) rather than per-dictionary code; the converter core has no file access and uses htmlparser2 (no DOM). | Users can add dictionaries without touching TypeScript; the same code can later run inside the extension. |
+| 16 | **MDX readings keep the dictionary's own system** (pinyin here) with the same separator clean-up as the Yomitan exports (`dú//shū` → `dú shū`, `·`/`-` → space), so grouping across MDX and Yomitan copies of one dictionary works. Zhuyin is derived only on request (`--derive-zhuyin`, `pinyin-to-zhuyin`). | Conversion stays generic; the derived system is opt-in and Chinese-specific. |
+| 17 | **`@font-face` rules are hoisted out of shadow roots** into the popup document and `body`/`html` selectors become `.ace-html`. | Fonts declared inside a shadow tree do not reliably apply; shadow roots have no body. |
+| 18 | **Dictionary JavaScript is never executed.** Interactive bits are declared in recipes (`interactions`: click → class toggle) and dark-mode fixes as recipe `css` with `light-dark()`. | MV3 extension pages cannot run code loaded from storage, and dictionary JS is untrusted; the common patterns (collapsible notes) are class toggles anyway. |
 
 ## 6. Open questions for the user
 
@@ -275,3 +333,10 @@ Open:
    dictionary with jyutping), it attaches to the first group that shares a headword. Say if you
    would rather see such entries in every group or in their own group. (Entries with *no* reading
    already form their own group, per your 2026-09-17 feedback.)
+7. MDX `@@@LINK=` sub-headwords: in 规范词典, compounds like 㓦划 are `@@@LINK=㓦` and appear as an
+   `<x-hwp>` block inside 㓦's entry. The converter makes 㓦划 an alias key to the whole 㓦 entry
+   (generic behaviour); your Yomitan exporter instead created a separate 㓦划 row with the
+   `x-hwp` reading. Say if you want a recipe rule that extracts such sub-headwords into their
+   own entries.
+8. ~~MDX readings are pinyin only.~~ Answered 2026-09-19: `--derive-zhuyin` adds zhuyin with
+   `pinyin-to-zhuyin`, the package your exporters use.

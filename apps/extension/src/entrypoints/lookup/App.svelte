@@ -99,7 +99,7 @@ function isEditable(target: EventTarget | null): boolean {
 // Theme + custom CSS.
 $effect(() => {
   const theme = options?.theme ?? 'auto';
-  return applyTheme(theme);
+  return applyTheme(theme, document, (dark) => post({ type: 'acetylcholine:scheme', dark }));
 });
 
 $effect(() => {

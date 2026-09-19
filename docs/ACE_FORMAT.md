@@ -118,7 +118,13 @@ MDX `entry://`). Both open a nested lookup in the popup.
 **HTML content rules.** Converters must remove `<script>`, `<link>`, `<style>` (its text is hoisted
 to `styles.css`), `<iframe>`, `<object>`, `<embed>`, all `on*` attributes, and `javascript:` URLs.
 The renderer sanitizes again with DOMPurify before insertion; unknown custom elements
-(`<hw>`, `<x-pr>`, …) are allowed because the dictionary CSS styles them.
+(`<hw>`, `<x-pr>`, …) and the attributes the content uses (`<p indent="1">`) are allowed because
+the dictionary CSS depends on them. Event handlers and embedding attributes never pass.
+
+**Interactions.** Dictionary scripts are never executed. An element carrying
+`data-ace-toggle="<classes>"` and optionally `data-ace-toggle-target="self|parent|<selector>"`
+toggles those classes on the target when clicked (the renderer installs one delegated handler).
+This covers collapsible notes and similar blocks whose CSS keys off a class.
 
 ## Keys — `AceKey`
 
@@ -153,7 +159,14 @@ and `kanji_meta_bank` v3 (`[character, "freq", data]`).
 Applied inside a shadow root that wraps this dictionary's content only. Selectors therefore never
 need a dictionary prefix. Yomitan dictionaries use `[data-sc-<name>=…]` attribute selectors, which
 the structured-content renderer produces; MDX dictionaries use whatever selectors their CSS has.
-`url()` references to fonts/images are rewritten to `ace-asset:<path>` by the converter.
+`url()` references to fonts/images are rewritten to `ace-asset:<path>` by the converter, which
+the popup resolves to object URLs before injecting the sheet. `@font-face` rules are moved to the
+popup document (fonts declared inside a shadow tree are not reliably available to it), so font
+family names should be reasonably unique. Selectors `html` and `body` are rewritten to the content
+root `.ace-html` at conversion time, since neither element exists inside a shadow root. The popup
+sets `color-scheme` from its theme on the document root (inherited by the shadow trees) and on the
+popup iframe element, so `light-dark()` values and `@media (prefers-color-scheme)` rules in
+dictionary CSS follow the popup theme rather than the operating system.
 
 ## Conventions for dictionary authors (Yomitan input)
 
@@ -180,6 +193,20 @@ that follow these conventions get the best results.
    `--variant-data-values` option is given, a headword can be recovered from marked content.
 4. **Every lookup form is a row.** If a word should be found under a variant spelling, emit a row
    for it (sharing the sequence) rather than relying on the importer to dig it out of the content.
+
+## Conventions for MDX input
+
+MDX records are opaque HTML, so the converter relies on a **recipe** (JSON, see `ace recipes`) per
+dictionary family: an optional `container` selector, a `split` rule (`each` element or
+`separator` element), the `reading` selector with clean-up replacements and a split for
+equivalent readings, and a `variants` pattern for traditional/alternative forms. Recipes are
+auto-detected through their `detect` patterns; unknown dictionaries get one entry per record and no
+reading. Each section becomes one entry whose `content` is a single `html` block; headwords are
+the record key plus the variants; `@@@LINK=` records become `alias` keys pointing at every entry of
+the (transitively resolved) target; `sequence` is the record's ordinal so the entries of one record
+stay related. A recipe may also append `css` (dark-mode fixes with `light-dark()`, layout tweaks)
+and declare `interactions` (`selector` → `toggleClass` on `target`) that stand in for the
+dictionary's JavaScript. `--derive-zhuyin` adds zhuyin readings computed from pinyin ones.
 
 ## Versioning
 

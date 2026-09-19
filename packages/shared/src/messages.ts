@@ -86,7 +86,13 @@ export type PopupOutbound =
   /** Content height so the host can shrink the frame below the configured maximum. */
   | { type: 'acetylcholine:size'; height: number }
   /** Forwarded keyboard/mouse activity so the host can keep the popup open. */
-  | { type: 'acetylcholine:activity' };
+  | { type: 'acetylcholine:activity' }
+  /**
+   * The popup's resolved colour scheme. The host mirrors it as `color-scheme` on the iframe
+   * element, so `prefers-color-scheme` inside the frame (used by dictionary CSS) follows the
+   * popup theme instead of the OS.
+   */
+  | { type: 'acetylcholine:scheme'; dark: boolean };
 
 export function isPopupMessage(value: unknown): value is PopupInbound | PopupOutbound {
   return (

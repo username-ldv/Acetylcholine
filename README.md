@@ -13,7 +13,7 @@ from every dictionary you have installed, and send it to Anki.
 apps/extension   WXT + Svelte 5 + Tailwind 4 + shadcn-svelte extension
 apps/cli         `ace` command line tool (convert / inspect / lookup / check)
 packages/ace     .ace format: types, validation, streaming reader + writer
-packages/convert Yomitan → .ace (MDX → .ace planned)
+packages/convert Yomitan → .ace and MDX → .ace (recipes describe each dictionary's HTML)
 packages/shared  settings schema, messaging, language adapters, lookup grouping, content renderers
 docs/            plan and specifications
 ```
@@ -68,6 +68,33 @@ Useful flags: `--title`, `--id`, `--reading-tags pinyin,zhuyin` (one per input, 
 otherwise), `--index-readings` (make readings searchable), `--no-merge` (keep every source row as
 its own entry), `--level 0-9`.
 
+### MDX dictionaries
+
+```sh
+# a mdict-utils text export folder (mdx/*.mdx.txt + mdd/ + sidecar css/fonts), or the .txt itself
+bun run ace convert path/to/export-folder -o dict.ace
+
+# a raw .mdx (the .mdd next to it and sidecar files are picked up automatically)
+bun run ace convert path/to/dict.mdx -o dict.ace
+
+bun run ace recipes                     # built-in recipes
+bun run ace recipes hanyu7 > my.json    # copy one, edit it, then:
+bun run ace convert dict.mdx --recipe my.json
+
+bun run ace convert dict.mdx --derive-zhuyin   # add zhuyin readings computed from the pinyin
+```
+
+MDX records are HTML, so the converter needs a *recipe* that says how a record splits into
+pronunciations, where the reading is, and where variant headwords (traditional forms) sit. Recipes
+are JSON (see `ace recipes`); the built-ins cover 现代汉语词典 (第7版) and 现代汉语规范词典 (第2版) and are
+auto-detected from the markup. Unknown dictionaries fall back to one entry per record without a
+reading. Scripts are dropped, `<link>`ed stylesheets are hoisted into `styles.css` (with `url()`
+references rewritten to bundled assets), `entry://` links become nested lookups, `@@@LINK=` records
+become alias keys, and only the images and fonts the content actually references are bundled.
+Dictionary JavaScript is never run; a recipe can declare `interactions` (click → class toggle) for
+collapsible notes and append `css` such as `light-dark()` colours for sheets that assume a light
+page.
+
 ## Using the extension
 
 1. Open the extension's settings (toolbar button → *Settings*, or it opens on first install).
@@ -101,9 +128,9 @@ reloads, times lookups, runs a search and Shift-hovers a test page; screenshots 
 
 ## Status
 
-Phases 0–3 of the plan are in place: scaffold, `.ace` format + Yomitan converter, extension
-database + import UI, and the lookup engine + popup. Next: MDX converter (Phase 4), profiles and
-deeper settings (5), Anki (6). See the plan for details.
+Phases 0–4 of the plan are in place: scaffold, `.ace` format + Yomitan converter, extension
+database + import UI, the lookup engine + popup, and the MDX converter with HTML rendering. Next:
+profiles and deeper settings (5), Anki (6). See the plan for details.
 
 ## License
 

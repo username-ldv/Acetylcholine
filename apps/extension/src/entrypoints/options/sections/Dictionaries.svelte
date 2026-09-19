@@ -16,6 +16,7 @@ import {
 import { formatBytes, formatCount, formatDate } from '$lib/format';
 import { type ImportJob, ImportQueue } from '$lib/import/queue.svelte';
 import { sendBackground } from '$lib/messaging';
+import { clearPreparedStyles } from '$lib/popup/content-host';
 import { clearDictionaryStyles } from '$lib/popup/dictionary-styles';
 import type { SettingsState } from '../settings.svelte';
 
@@ -47,6 +48,7 @@ async function refresh() {
 async function onImportFinished(job: ImportJob) {
   if (job.status === 'done') {
     clearDictionaryStyles();
+    clearPreparedStyles();
     await refresh();
     await sendBackground({ type: 'dictionariesChanged' });
   }
@@ -105,6 +107,7 @@ async function confirmDelete() {
       profile.dictionaries = profile.dictionaries.filter((p) => p.id !== id);
     }
     clearDictionaryStyles();
+    clearPreparedStyles();
     await refresh();
     await sendBackground({ type: 'dictionariesChanged' });
   } finally {

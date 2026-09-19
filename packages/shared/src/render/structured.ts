@@ -11,6 +11,7 @@ import type {
   StructuredContentNode,
   StructuredContentStyle,
 } from '@acetylcholine/ace';
+import { attachInteractionHandler } from './interactions.ts';
 
 export interface RenderContext {
   document?: Document;
@@ -54,6 +55,7 @@ export function renderContent(blocks: readonly AceContent[], ctx: RenderContext)
     if (node) root.appendChild(node);
   }
   attachLinkHandler(root, ctx);
+  attachInteractionHandler(root);
   return root;
 }
 

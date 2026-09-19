@@ -18,6 +18,7 @@
     "@acetylcholine/convert": "workspace:*",
     "@zip.js/zip.js": "^2.15.0",
     "citty": "^0.2.2",
-    "consola": "^3.4.2"
+    "consola": "^3.4.2",
+    "js-mdict": "^6.0.8"
   }
 }

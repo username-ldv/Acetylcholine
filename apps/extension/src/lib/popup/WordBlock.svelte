@@ -19,6 +19,12 @@ interface Props {
 
 let { block, dictionaries, options, onLookup }: Props = $props();
 
+/**
+ * Reading badges disambiguate definitions of a word that has several pronunciations across the
+ * enabled dictionaries. With a single pronunciation (or none) they would only repeat the header.
+ */
+const showBadges = $derived(block.pronunciations >= 2);
+
 /** Reading badge text for one definition: its primary-system readings (all systems when asked). */
 function badge(readings: AceReading[]): string | null {
   if (readings.length === 0) return null;
@@ -42,10 +48,12 @@ function badge(readings: AceReading[]): string | null {
             {#if i === 0 && options.showDictionaryTitles}
               <span class="ace-dictionary-title">{dictionary.title}</span>
             {/if}
-            {#if reading !== null}
-              <span class="ace-entry-reading">{reading}</span>
-            {:else}
-              <span class="ace-entry-reading ace-reading-none" title="This entry has no reading">no reading</span>
+            {#if showBadges}
+              {#if reading !== null}
+                <span class="ace-entry-reading">{reading}</span>
+              {:else}
+                <span class="ace-entry-reading ace-reading-none" title="This entry has no reading">no reading</span>
+              {/if}
             {/if}
             <DictionaryContent
               entry={item.entry}

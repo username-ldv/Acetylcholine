@@ -141,6 +141,8 @@ describe('groupHits', () => {
     const block = blocks[0]!;
     expect(block.headwords).toEqual(['的']);
     expect(block.readings.map((r) => r.text)).toEqual(['dì', 'ㄉㄧˋ', 'de']);
+    // dì and de: two pronunciations; the reading-less group does not count.
+    expect(block.pronunciations).toBe(2);
     expect(block.dictionaries.map((d) => d.dictionary)).toEqual(['a', 'b']);
     expect(block.dictionaries[0]!.entries.map((e) => e.entry.id)).toEqual([aDi.id, aDe.id]);
     expect(block.dictionaries[1]!.entries.map((e) => e.entry.id)).toEqual([
@@ -148,6 +150,25 @@ describe('groupHits', () => {
       bDe.id,
       bBare.id,
     ]);
+  });
+
+  it('counts one pronunciation per word when dictionaries agree, even with several systems', () => {
+    const a = entry(
+      ['读'],
+      [
+        ['dú', ['pinyin']],
+        ['ㄉㄨˊ', ['zhuyin']],
+      ],
+    );
+    const b = entry(['读'], [['dú', ['pinyin']]]);
+    const bare = entry(['读'], []);
+    const groups = groupHits(
+      [hit('a', a, '读'), hit('b', b, '读'), hit('c', bare, '读')],
+      ['a', 'b', 'c'],
+    );
+    const [block] = mergeGroupsByWord(groups, ['a', 'b', 'c']);
+    expect(block!.pronunciations).toBe(1);
+    expect(block!.dictionaries).toHaveLength(3);
   });
 
   it('puts the scanned form first among the headwords', () => {

@@ -67,6 +67,11 @@ export interface WordBlock {
   headwords: string[];
   /** Union of readings across all entries. */
   readings: AceReading[];
+  /**
+   * Number of distinct pronunciations merged into this block (reading-bearing groups). The
+   * per-definition reading badge is only worth showing when this is 2 or more.
+   */
+  pronunciations: number;
   dictionaries: WordBlockDictionary[];
 }
 

@@ -7,6 +7,11 @@ export type ConvertStage =
   | 'tags'
   | 'kanji'
   | 'kanjiMeta'
+  /** MDX: records become entries. */
+  | 'records'
+  /** MDX: `@@@LINK=` aliases. */
+  | 'links'
+  | 'styles'
   | 'assets'
   | 'finish';
 

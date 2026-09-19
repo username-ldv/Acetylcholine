@@ -1,8 +1,11 @@
 import type { AceContent } from '@acetylcholine/ace';
 import { renderHtml } from './html.ts';
+import { attachInteractionHandler } from './interactions.ts';
 import { attachLinkHandler, type RenderContext, renderBlock } from './structured.ts';
 
+export * from './css.ts';
 export * from './html.ts';
+export * from './interactions.ts';
 export * from './reading.ts';
 export * from './structured.ts';
 
@@ -19,6 +22,7 @@ export function renderEntryContent(blocks: readonly AceContent[], ctx: RenderCon
     if (node) root.appendChild(node);
   }
   attachLinkHandler(root, ctx);
+  attachInteractionHandler(root);
   return root;
 }
 
@@ -47,5 +51,6 @@ table { border-collapse: collapse; }
 td, th { border: 1px solid currentColor; padding: 0.15em 0.4em; }
 ol, ul { padding-inline-start: 1.5em; margin: 0.25em 0; }
 details > summary { cursor: pointer; }
+[data-ace-toggle] { cursor: pointer; }
 .ace-deinflection-rules { opacity: 0.7; font-size: 0.85em; }
 `;

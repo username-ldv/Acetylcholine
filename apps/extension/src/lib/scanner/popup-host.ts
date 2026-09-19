@@ -157,6 +157,9 @@ export class PopupHost {
         break;
       case 'acetylcholine:activity':
         break;
+      case 'acetylcholine:scheme':
+        this.frame.style.setProperty('color-scheme', msg.dark ? 'dark' : 'light', 'important');
+        break;
     }
   };
 

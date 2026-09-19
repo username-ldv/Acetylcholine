@@ -51,6 +51,26 @@ export function collectTagNames(html: string): string[] {
   return [...names];
 }
 
+const ATTRIBUTE_RE = /\s([a-zA-Z][\w-]*)=["']/g;
+/** Attributes that must never be allowed through by name (event handlers are excluded by prefix). */
+const UNSAFE_ATTRIBUTES = new Set(['srcdoc', 'srcset', 'formaction', 'action', 'is', 'slot']);
+
+/**
+ * Attribute names used by a snippet, so dictionary-specific attributes on standard elements
+ * (`<p indent="1">`, `<a type="see">`) survive sanitizing: their CSS depends on them. Event
+ * handlers and embedding attributes are never included; URL-valued attributes still go through
+ * DOMPurify's URI checks.
+ */
+export function collectAttributeNames(html: string): string[] {
+  const names = new Set<string>();
+  for (const m of html.matchAll(ATTRIBUTE_RE)) {
+    const name = m[1]!.toLowerCase();
+    if (name.startsWith('on') || UNSAFE_ATTRIBUTES.has(name)) continue;
+    names.add(name);
+  }
+  return [...names];
+}
+
 export interface SanitizedHtml {
   fragment: DocumentFragment;
 }
@@ -62,7 +82,7 @@ export function sanitizeHtml(html: string, doc: Document = document): DocumentFr
     RETURN_DOM_FRAGMENT: true,
     ADD_TAGS: collectTagNames(html),
     FORBID_TAGS: [...FORBIDDEN_TAGS],
-    ADD_ATTR: ['target'],
+    ADD_ATTR: ['target', ...collectAttributeNames(html)],
     ALLOWED_URI_REGEXP: ACE_URI_REGEXP,
     ALLOW_DATA_ATTR: true,
     CUSTOM_ELEMENT_HANDLING: {

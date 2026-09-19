@@ -1,4 +1,4 @@
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import {
   AceReader,
@@ -7,11 +7,20 @@ import {
   aceKeySchema,
   structuredContentToText,
 } from '@acetylcholine/ace';
-import { type ConvertProgress, checkYomitanEditions, convertYomitan } from '@acetylcholine/convert';
+import {
+  BUILTIN_RECIPES,
+  type ConvertProgress,
+  checkYomitanEditions,
+  convertMdx,
+  convertYomitan,
+  type MdxRecipe,
+  parseRecipe,
+} from '@acetylcholine/convert';
 import { configure } from '@zip.js/zip.js';
 import { defineCommand, runMain } from 'citty';
 import { consola } from 'consola';
 import { createFileSink, openFileBlob } from './io.ts';
+import { openMdxInput } from './mdx-sources.ts';
 
 configure({ useWebWorkers: false });
 
@@ -27,7 +36,7 @@ function formatProgress(p: ConvertProgress): string {
 async function detectFormat(path: string): Promise<'yomitan' | 'mdx'> {
   const ext = extname(path).toLowerCase();
   if (ext === '.zip') return 'yomitan';
-  if (ext === '.mdx') return 'mdx';
+  if (ext === '.mdx' || ext === '.txt') return 'mdx';
   const s = await stat(path);
   if (s.isDirectory()) return 'mdx';
   throw new Error(`Cannot detect the dictionary format of ${path}; pass --format`);
@@ -54,6 +63,16 @@ const convert = defineCommand({
       type: 'boolean',
       default: true,
       description: 'Merge identical entries across rows/inputs',
+    },
+    'derive-zhuyin': {
+      type: 'boolean',
+      default: false,
+      description: 'MDX only: add zhuyin readings derived from the pinyin ones (pinyin-to-zhuyin)',
+    },
+    recipe: {
+      type: 'string',
+      description:
+        'MDX only: built-in recipe name (see `ace recipes`) or path to a recipe JSON; auto-detected otherwise',
     },
     level: { type: 'string', default: '6', description: 'Deflate level 0-9' },
     quiet: { type: 'boolean', default: false },
@@ -108,10 +127,62 @@ const convert = defineCommand({
           `${manifest.counts.assets} assets, reading tags: ${manifest.readingTags.join(', ') || 'none'}`,
       );
     } else if (format === 'mdx') {
-      throw new Error('MDX conversion is not implemented yet (planned in Phase 4)');
+      if (inputs.length !== 1) {
+        throw new Error('MDX conversion takes exactly one input: a folder, a .mdx.txt or a .mdx');
+      }
+      const input = await openMdxInput(inputs[0]!);
+      consola.info(`Opened ${input.label}`);
+      const { manifest, stats } = await convertMdx(input.source, writer, {
+        recipe: await loadRecipe(args.recipe),
+        deriveZhuyin: args['derive-zhuyin'],
+        readingTag: readingTags?.[0],
+        indexReadings: args['index-readings'],
+        title: args.title,
+        id: args.id,
+        generator: `acetylcholine-cli/${VERSION}`,
+        onProgress,
+        onWarning: (message) => consola.warn(message),
+      });
+      const seconds = ((performance.now() - started) / 1000).toFixed(1);
+      const size = (await stat(output)).size;
+      consola.success(
+        `Wrote ${output} (${(size / 1024 / 1024).toFixed(1)} MiB) in ${seconds}s — ` +
+          `${manifest.counts.entries} entries (${stats.entriesWithReading} with a reading), ` +
+          `${manifest.counts.keys} keys, ${manifest.counts.assets} assets; recipe: ${stats.recipe}, ` +
+          `reading tag: ${stats.readingTag ?? 'none'}` +
+          (stats.derivedReadings > 0 ? ` (+${stats.derivedReadings} derived zhuyin)` : '') +
+          `, links: ${stats.links} (${stats.unresolvedLinks} unresolved)`,
+      );
     } else {
       throw new Error(`Unknown format "${format}"`);
     }
+  },
+});
+
+/** `--recipe`: a built-in name, or a JSON file with a recipe. */
+async function loadRecipe(arg: string | undefined): Promise<MdxRecipe | string | undefined> {
+  if (!arg) return undefined;
+  if (/\.json$/i.test(arg)) return parseRecipe(JSON.parse(await readFile(resolve(arg), 'utf8')));
+  return arg;
+}
+
+const recipes = defineCommand({
+  meta: { name: 'recipes', description: 'List the built-in MDX recipes (or print one as JSON)' },
+  args: {
+    name: { type: 'positional', required: false, description: 'Print this recipe as JSON' },
+  },
+  run({ args }) {
+    if (args.name) {
+      const recipe = BUILTIN_RECIPES.find((r) => r.name === args.name);
+      if (!recipe) throw new Error(`Unknown recipe "${args.name}"`);
+      console.log(JSON.stringify(recipe, null, 2));
+      return;
+    }
+    for (const r of BUILTIN_RECIPES) console.log(`${r.name.padEnd(10)} ${r.description ?? ''}`);
+    console.log('');
+    console.log(
+      'Copy one with `ace recipes <name> > my-recipe.json`, edit it, and pass --recipe my-recipe.json.',
+    );
   },
 });
 
@@ -293,7 +364,7 @@ const main = defineCommand({
     version: VERSION,
     description: 'Acetylcholine dictionary tool: convert, inspect and query .ace files',
   },
-  subCommands: { convert, inspect, lookup, check },
+  subCommands: { convert, recipes, inspect, lookup, check },
 });
 
 runMain(main);
