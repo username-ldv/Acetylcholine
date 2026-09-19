@@ -328,8 +328,12 @@ try {
         };
       }),
     }));
+    const doc = document.documentElement;
     return {
       words,
+      // Absolutely positioned dictionary boxes must stay inside their entry; when they escape the
+      // scroll container they inflate the document instead (a second scrollbar, oversized frame).
+      documentOverflows: doc.scrollHeight > doc.clientHeight,
       fontStyles: document.querySelectorAll('style[data-ace-fonts]').length,
       fontsLoaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family),
     };

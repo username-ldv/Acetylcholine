@@ -79,8 +79,17 @@
   opacity: 0.55;
 }
 
-/* Compact: dictionary name, reading badge and an inline dictionary root share one line. */
+/*
+ * Compact: dictionary name, reading badge and an inline dictionary root share one line.
+ *
+ * The entry is the containing block for the dictionary's absolutely positioned boxes (sense
+ * markers hanging in the margin, superscripts, ...). Without it they resolve against the frame's
+ * initial containing block: they escape the scroll container, stay put while the entry scrolls,
+ * and their overflow inflates the document instead of the scroller (a second scrollbar and a
+ * frame taller than its content).
+ */
 .ace-entry {
+  position: relative;
   margin: 0;
 }
 
