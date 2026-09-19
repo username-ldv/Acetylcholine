@@ -283,9 +283,46 @@ badges while 读书 (one pronunciation) shows none. The 规范词典 用法说�
       "view note" opens Anki browser; tag notes.
 
 ### Phase 7 — Web-request dictionaries  `[ ]`
-- [ ] Dictionary type `web`: URL template, mode `iframe` (embed page) or `fetch` (background fetch +
-      sanitized HTML, optional CSS selector to extract), optional host permission per origin.
-- [ ] Shown as a regular section in the popup, lazily loaded.
+Web dictionaries are configured in the extension, not converted. They are also the way to use
+dictionaries whose JavaScript matters (decision 18): in `iframe` mode the browser runs the site's
+scripts in the site's own origin, exactly as in a tab, and the extension never loads any code.
+
+- [ ] Dictionary type `web`: display title, URL template (`{term}` URL-encoded; `{termRaw}`,
+      `{reading}` later), and a mode:
+      - `iframe`: the page is embedded in an iframe inside the popup with
+        `sandbox="allow-scripts allow-same-origin allow-forms allow-popups"` (no top-level
+        navigation, so a site cannot navigate the popup or the page away). Fixed height per
+        dictionary with scrolling; the popup's `color-scheme` is mirrored on the frame so sites
+        with a dark mode follow the theme.
+      - `fetch`: the background fetches the page, extracts an optional CSS selector, and renders
+        the HTML through the existing sanitizing renderer (no scripts), cached for the session.
+        Works on sites that refuse framing; the content is available to Anki export.
+- [ ] Per-origin opt-ins, each requested only when the user turns it on: the host permission
+      (required for `fetch` and for the two helpers below), a `declarativeNetRequest` rule that
+      strips `X-Frame-Options` / `frame-ancestors` on responses for frames opened by the popup
+      (sites that block embedding), and a small content script injected into the embedded page
+      that reports its height and enables Shift+hover lookups inside it.
+- [ ] Shown as a regular section in the popup in dictionary order, loaded lazily (only when the
+      section becomes visible); "no result" heuristic in `fetch` mode (selector matched nothing
+      → section hidden); an "open in tab" link in both modes.
+- [ ] Privacy note in the settings: every lookup sends the scanned term to the site's URL.
+- [ ] Optional: `ace serve <dict.mdx | export folder>`, a local HTTP server in the CLI that
+      serves MDX records as pages with their original CSS, JavaScript and `.mdd` resources
+      (js-mdict is already there), so a script-heavy MDX dictionary becomes a local web
+      dictionary without third-party tools.
+
+**The two configurations this phase must make trivial:**
+
+| | online third-party site | locally hosted dictionary |
+| --- | --- | --- |
+| example | 百度汉语: `https://hanyu.baidu.com/hanyu-page/term/detail?wd={term}&ptype=zici` (the site's own tabs, audio and stroke animations keep working) | an MDX served locally, `http://127.0.0.1:8000/{term}` (ninja33's `mdx-server`, or the optional `ace serve`); or any static HTML dictionary behind `python -m http.server` |
+| mode | `iframe` (its JavaScript is the point) | `iframe` |
+| needs | host permission for `hanyu.baidu.com`; framing headers: none sent (checked 2026-09-19: the response carries neither `X-Frame-Options` nor a CSP); script-based frame busting, if any, cannot navigate the popup because the sandbox omits `allow-top-navigation` | nothing beyond a `127.0.0.1` host permission |
+| privacy | the term is sent to Baidu on every lookup | stays on the machine |
+
+**Checkpoint:** both examples appear as sections in the popup for 词典; the Baidu page is
+interactive inside the popup; the local MDX page renders with its scripts running; and a
+`fetch`-mode dictionary renders through the sanitizer and exports to Anki.
 
 ### Phase 8 — Polish, performance, parity  `[ ]`
 - [ ] Bloom filters / prefix tables per dictionary; lookup benchmarks in CI.
@@ -314,7 +351,7 @@ badges while 读书 (one pronunciation) shows none. The 规范词典 用法说�
 | 15 | **MDX structure comes from JSON recipes** (selectors + regexes) rather than per-dictionary code; the converter core has no file access and uses htmlparser2 (no DOM). | Users can add dictionaries without touching TypeScript; the same code can later run inside the extension. |
 | 16 | **MDX readings keep the dictionary's own system** (pinyin here) with the same separator clean-up as the Yomitan exports (`dú//shū` → `dú shū`, `·`/`-` → space), so grouping across MDX and Yomitan copies of one dictionary works. Zhuyin is derived only on request (`--derive-zhuyin`, `pinyin-to-zhuyin`). | Conversion stays generic; the derived system is opt-in and Chinese-specific. |
 | 17 | **`@font-face` rules are hoisted out of shadow roots** into the popup document and `body`/`html` selectors become `.ace-html`. | Fonts declared inside a shadow tree do not reliably apply; shadow roots have no body. |
-| 18 | **Dictionary JavaScript is never executed.** Interactive bits are declared in recipes (`interactions`: click → class toggle) and dark-mode fixes as recipe `css` with `light-dark()`. | MV3 extension pages cannot run code loaded from storage, and dictionary JS is untrusted; the common patterns (collapsible notes) are class toggles anyway. |
+| 18 | **Dictionary JavaScript is never executed by the extension.** Interactive bits are declared in recipes (`interactions`: click → class toggle) and dark-mode fixes as recipe `css` with `light-dark()`. Dictionaries whose scripts matter are used as web-request dictionaries in `iframe` mode (Phase 7), where the browser runs them in their own origin. | MV3 extension pages cannot run code loaded from storage (Tampermonkey-style `userScripts` only target web pages), and dictionary JS is untrusted; the common patterns (collapsible notes) are class toggles anyway. |
 
 ## 6. Open questions for the user
 
