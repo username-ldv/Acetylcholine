@@ -1,4 +1,4 @@
-import type { AceEntry } from '@acetylcholine/ace';
+import { type AceEntry, AceKeyKind } from '@acetylcholine/ace';
 import { describe, expect, it } from 'vitest';
 import { groupHits } from '../src/lookup/group.ts';
 import type { LookupHit } from '../src/lookup/types.ts';
@@ -155,7 +155,10 @@ describe('mergeVariantHits', () => {
     const moeSend = entry(['發', '发'], 'fā');
     // 髮 is an @@@LINK alias to every 发 page, the 發 sense included.
     const mdxSend = entry(['发', '發'], 'fā');
-    const direct = [hit('moe', moeHair, '髮'), { ...hit('mdx', mdxSend, '髮'), kinds: [3] }];
+    const direct = [
+      hit('moe', moeHair, '髮'),
+      { ...hit('mdx', mdxSend, '髮'), kinds: [AceKeyKind.Alias] },
+    ];
     const probes = planVariantProbes(direct);
     expect(probes.map((p) => p.form)).toEqual(['发']); // not 發
     const merged = mergeVariantHits(
