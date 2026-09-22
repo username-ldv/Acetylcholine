@@ -189,6 +189,19 @@ IndexedDB; the list, counts and storage line survive a page reload.
       Dictionary name, reading badge and an inline dictionary root share one line. The reading
       badge is only shown when the word has two or more pronunciations across the enabled
       dictionaries (2026-09-19); with one pronunciation it would just repeat the header.
+- [x] **Variant-form expansion** (2026-09-22, per-profile setting *Scanning → Lookup*, on by
+      default): after the direct query, the other written forms the direct hits list (the MOE
+      entry for 圖片 names 图片) are looked up in every enabled dictionary, so dictionaries that
+      key a word in one script only (现汉 / 规范词典 key 图片 but not 圖片) still appear. No
+      script conversion is involved. An entry found this way is kept when it names the scanned
+      word (all of its forms are among the direct hits' forms, or it shares one besides the
+      probed form: 现汉's 干 listing 乾) and dropped when its only link is the shared form while it
+      also names something else (發 [發, 发] when 髮 was scanned); such a contested form marks the
+      entries kept through it *ambiguous*. Alias keys (MDX `@@@LINK`) neither contribute forms
+      nor probes. Popup: a dashed “via 图片” badge per entry (amber “· ambiguous” when
+      contested); groups reached only through a variant sort after direct ones of the same
+      length. Checked on the sample data: 圖片 and 理髮 gain the two simplified dictionaries; 髮
+      does not bring 發; 乾 goes from six groups to three (`packages/shared/src/lookup/variants.ts`).
 - [ ] Keyboard entry switching (Alt+↑/↓) — later.
 
 **Checkpoint (met, 2026-09-17):** Shift+hover on 读书 in a test page shows the popup with three
@@ -352,6 +365,7 @@ interactive inside the popup; the local MDX page renders with its scripts runnin
 | 16 | **MDX readings keep the dictionary's own system** (pinyin here) with the same separator clean-up as the Yomitan exports (`dú//shū` → `dú shū`, `·`/`-` → space), so grouping across MDX and Yomitan copies of one dictionary works. Zhuyin is derived only on request (`--derive-zhuyin`, `pinyin-to-zhuyin`). | Conversion stays generic; the derived system is opt-in and Chinese-specific. |
 | 17 | **`@font-face` rules are hoisted out of shadow roots** into the popup document and `body`/`html` selectors become `.ace-html`. | Fonts declared inside a shadow tree do not reliably apply; shadow roots have no body. |
 | 18 | **Dictionary JavaScript is never executed by the extension.** Interactive bits are declared in recipes (`interactions`: click → class toggle) and dark-mode fixes as recipe `css` with `light-dark()`. Dictionaries whose scripts matter are used as web-request dictionaries in `iframe` mode (Phase 7), where the browser runs them in their own origin. | MV3 extension pages cannot run code loaded from storage (Tampermonkey-style `userScripts` only target web pages), and dictionary JS is untrusted; the common patterns (collapsible notes) are class toggles anyway. |
+| 19 | **Cross-script coverage comes from the dictionaries' own variant lists, not from a converter.** The lookup re-queries the forms the direct hits name and marks what it finds; simplified → traditional conversion is never guessed. | OpenCC-style conversion is ambiguous (发 → 發/髮), while a traditional dictionary that lists 图片 for 圖片 is authoritative. |
 
 ## 6. Open questions for the user
 

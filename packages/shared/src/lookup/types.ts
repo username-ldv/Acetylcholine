@@ -24,6 +24,17 @@ export interface DictionaryInfo {
   sourceFormat: string;
 }
 
+/**
+ * How an entry that the scanned text itself does not key was found: through another written
+ * form of the word that the direct hits list (圖片 → 图片). `ambiguous` is set when that form is
+ * also a form of a different word in the enabled dictionaries (发 stands for both 發 and 髮), so
+ * the entry may describe that other word.
+ */
+export interface LookupVia {
+  form: string;
+  ambiguous: boolean;
+}
+
 /** One key match, before grouping. */
 export interface LookupHit {
   dictionary: string;
@@ -33,12 +44,16 @@ export interface LookupHit {
   matched: string;
   /** UTF-16 length of the raw scanned text the match covers. */
   length: number;
+  /** Present when the entry was reached through a variant form rather than the scanned text. */
+  via?: LookupVia;
 }
 
 export interface LookupEntry {
   dictionary: string;
   entry: AceEntry;
   kinds: AceKeyKind[];
+  /** Present when the entry was reached through a variant form rather than the scanned text. */
+  via?: LookupVia;
 }
 
 /** Entries from several dictionaries that describe the same word with the same pronunciation. */

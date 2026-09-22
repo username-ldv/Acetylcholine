@@ -9,6 +9,7 @@ import {
 } from '@acetylcholine/shared';
 import DictionaryContent from './DictionaryContent.svelte';
 import ReadingsHeader from './ReadingsHeader.svelte';
+import ViaBadge from './ViaBadge.svelte';
 
 interface Props {
   block: WordBlock;
@@ -54,6 +55,9 @@ function badge(readings: AceReading[]): string | null {
               {:else}
                 <span class="ace-entry-reading ace-reading-none" title="This entry has no reading">no reading</span>
               {/if}
+            {/if}
+            {#if item.via}
+              <ViaBadge via={item.via} />
             {/if}
             <DictionaryContent
               entry={item.entry}

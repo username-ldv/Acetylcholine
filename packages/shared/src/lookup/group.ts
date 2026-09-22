@@ -12,6 +12,8 @@ interface MutableGroup extends LookupGroup {
   readingsByTag: Map<string, Set<string>>;
   untaggedReadings: Set<string>;
   firstDictIndex: number;
+  /** True when at least one entry was keyed by the scanned text itself (not only via a variant). */
+  direct: boolean;
 }
 
 /**
@@ -23,7 +25,8 @@ interface MutableGroup extends LookupGroup {
  * never join a pronunciation group: they form their own "no reading" group, listed after the
  * pronounced ones.
  *
- * Groups are ordered by match length (longest first), then by the best dictionary they contain,
+ * Groups are ordered by match length (longest first), then groups the scanned text keys directly
+ * before groups reached only through a variant form, then by the best dictionary they contain,
  * then by score. Entries inside a group follow dictionary order.
  */
 export function groupHits(
@@ -59,6 +62,7 @@ export function groupHits(
         readingsByTag: new Map(),
         untaggedReadings: new Set(),
         firstDictIndex: rank(hit.dictionary),
+        direct: false,
       };
       addToGroup(g, hit, rank(hit.dictionary));
       groups.push(g);
@@ -68,13 +72,16 @@ export function groupHits(
   groups.sort(
     (a, b) =>
       b.length - a.length ||
+      Number(b.direct) - Number(a.direct) ||
       Number(b.readings.length > 0) - Number(a.readings.length > 0) ||
       a.firstDictIndex - b.firstDictIndex ||
       b.score - a.score ||
       a.entries[0]!.entry.id - b.entries[0]!.entry.id,
   );
   for (const g of groups) scannedFormFirst(g.headwords, g.matched);
-  return groups.map(({ headwordSet, readingsByTag, untaggedReadings, firstDictIndex, ...g }) => g);
+  return groups.map(
+    ({ headwordSet, readingsByTag, untaggedReadings, firstDictIndex, direct, ...g }) => g,
+  );
 }
 
 /**
@@ -195,7 +202,10 @@ function addToGroup(group: MutableGroup, hit: LookupHit, dictIndex: number): voi
     }
     mergeReadingInto(group.readings, r);
   }
-  group.entries.push({ dictionary: hit.dictionary, entry: hit.entry, kinds: hit.kinds });
+  const entry: LookupEntry = { dictionary: hit.dictionary, entry: hit.entry, kinds: hit.kinds };
+  if (hit.via) entry.via = hit.via;
+  else group.direct = true;
+  group.entries.push(entry);
   group.score = Math.max(group.score, hit.entry.score);
   group.firstDictIndex = Math.min(group.firstDictIndex, dictIndex);
 }

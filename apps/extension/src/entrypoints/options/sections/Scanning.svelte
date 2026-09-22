@@ -9,6 +9,7 @@ import type { SettingsState } from '../settings.svelte';
 let { settings }: { settings: SettingsState } = $props();
 
 const scanning = $derived(settings.profile.scanning);
+const lookup = $derived(settings.profile.lookup);
 
 const modifiers: { value: ScanModifier; label: string }[] = [
   { value: 'shift', label: 'Shift' },
@@ -97,6 +98,21 @@ function clampInt(value: string, min: number, max: number, fallback: number): nu
       />
       <p class="text-xs text-muted-foreground">How long the cursor must rest before scanning.</p>
     </div>
+  </section>
+
+  <section class="space-y-3">
+    <Label>Lookup</Label>
+    <div class="flex items-center gap-3">
+      <Switch id="lookup-variants" checked={lookup.variants} onCheckedChange={(v) => (lookup.variants = v)} />
+      <Label for="lookup-variants" class="font-normal">Also look up the other written forms of the word</Label>
+    </div>
+    <p class="text-xs text-muted-foreground">
+      When a dictionary lists another form of the scanned word (圖片 → 图片), that form is looked up in
+      every dictionary too, so dictionaries that know the word in one script only still appear. Entries
+      found this way carry a “via 图片” mark; when the form also stands for a different word (发 is both
+      發 and 髮) the mark says “ambiguous”. No script conversion is done: only forms the dictionaries
+      themselves list are used.
+    </p>
   </section>
 
   <section class="space-y-4">

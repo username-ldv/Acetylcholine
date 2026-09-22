@@ -7,6 +7,7 @@ import {
 } from '@acetylcholine/shared';
 import DictionaryContent from './DictionaryContent.svelte';
 import ReadingsHeader from './ReadingsHeader.svelte';
+import ViaBadge from './ViaBadge.svelte';
 
 interface Props {
   group: LookupGroup;
@@ -27,6 +28,9 @@ let { group, dictionaries, options, onLookup }: Props = $props();
       <article class="ace-entry">
         {#if options.showDictionaryTitles}
           <span class="ace-dictionary-title">{dictionary.title}</span>
+        {/if}
+        {#if item.via}
+          <ViaBadge via={item.via} />
         {/if}
         <DictionaryContent
           entry={item.entry}

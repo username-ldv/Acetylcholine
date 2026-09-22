@@ -34,6 +34,16 @@ export const scanningSchema = z.object({
 });
 export type ScanningOptions = z.infer<typeof scanningSchema>;
 
+export const lookupSchema = z.object({
+  /**
+   * Also look up the other written forms that the direct hits list (圖片 → 图片), so dictionaries
+   * that key a word in one script only still appear. Entries found this way are marked with the
+   * form used.
+   */
+  variants: z.boolean().default(true),
+});
+export type LookupOptions = z.infer<typeof lookupSchema>;
+
 export const popupSchema = z.object({
   width: z.number().int().min(200).max(2000).default(480),
   height: z.number().int().min(150).max(2000).default(360),
@@ -90,6 +100,7 @@ export const profileSchema = z.object({
    * (`dictionary`).
    */
   resultLayout: resultLayoutSchema.default('reading'),
+  lookup: lookupSchema.default(() => lookupSchema.parse({})),
   scanning: scanningSchema.default(() => scanningSchema.parse({})),
   popup: popupSchema.default(() => popupSchema.parse({})),
 });

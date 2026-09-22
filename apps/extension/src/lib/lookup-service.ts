@@ -10,10 +10,18 @@ import {
   groupHits,
   type LookupHit,
   type LookupResult,
+  mergeVariantHits,
+  planVariantProbes,
   resolveDictionaryPreferences,
   type Settings,
 } from '@acetylcholine/shared';
-import { type DictionaryRecord, listDictionaries, queryCandidates, toDictionaryInfo } from './db';
+import {
+  type CandidateMatch,
+  type DictionaryRecord,
+  listDictionaries,
+  queryCandidates,
+  toDictionaryInfo,
+} from './db';
 
 const MAX_SCAN_TEXT = 256;
 
@@ -118,8 +126,7 @@ export class LookupService {
     }
     if (numbers.size === 0) return empty();
 
-    const matches = await queryCandidates(candidates, numbers);
-    const hits: LookupHit[] = matches.map((m) => {
+    const toHit = (m: CandidateMatch): LookupHit => {
       const { d, ...entry } = m.entry;
       return {
         dictionary: idByNumber.get(d)!,
@@ -128,7 +135,23 @@ export class LookupService {
         matched: m.candidate.text,
         length: m.candidate.length,
       };
-    });
+    };
+    let hits: LookupHit[] = (await queryCandidates(candidates, numbers)).map(toHit);
+
+    // Second round: the other written forms the direct hits list (圖片 → 图片), so dictionaries
+    // that key a word in one script only are reached as well.
+    if (profile.lookup.variants && hits.length > 0) {
+      const probes = planVariantProbes(hits);
+      if (probes.length > 0) {
+        const probeCandidates = probes.map((p) => ({ text: p.form, length: p.candidate.length }));
+        const probeOf = new Map(probeCandidates.map((c, i) => [c, probes[i]!]));
+        const matches = await queryCandidates(probeCandidates, numbers);
+        hits = mergeVariantHits(
+          hits,
+          matches.map((m) => ({ probe: probeOf.get(m.candidate)!, hit: toHit(m) })),
+        );
+      }
+    }
     const groups = groupHits(hits, enabledIds);
     const used = new Set<string>();
     for (const g of groups) for (const e of g.entries) used.add(e.dictionary);

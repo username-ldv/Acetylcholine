@@ -123,6 +123,27 @@
   color: inherit;
 }
 
+/*
+ * Entry reached through a variant form of the scanned word (圖片 scanned, 图片 looked up). The
+ * ambiguous variant means the form also stands for another word, so the entry may describe that.
+ */
+.ace-entry-via {
+  display: inline-block;
+  font-size: 0.75em;
+  padding: 0 0.35rem;
+  margin-right: 0.35rem;
+  border-radius: 0.3rem;
+  border: 1px dashed color-mix(in oklch, currentColor 35%, transparent);
+  opacity: 0.8;
+  vertical-align: baseline;
+  cursor: help;
+}
+
+.ace-entry-via.ace-via-ambiguous {
+  border-color: color-mix(in oklch, #d97706 70%, currentColor);
+  color: color-mix(in oklch, currentColor 40%, #d97706);
+}
+
 /* The host and its wrappers create no boxes: an inline dictionary root flows after the badges. */
 .ace-dictionary-content {
   display: contents;
