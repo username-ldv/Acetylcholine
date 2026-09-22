@@ -11,9 +11,11 @@ import {
 import {
   type CaretHit,
   caretFromPoint,
+  extractSentence,
   extractText,
   rangeForLength,
   type ScannedText,
+  type SentenceParts,
 } from './text.ts';
 
 export interface ScanHit {
@@ -21,6 +23,8 @@ export interface ScanHit {
   scanned: ScannedText;
   /** Range of the longest match, or null when nothing matched. */
   range: Range | null;
+  /** The sentence around the match (for Anki), or null when nothing matched. */
+  sentence: SentenceParts | null;
 }
 
 export interface ScannerOptions {
@@ -185,7 +189,15 @@ export class Scanner {
     if (seq !== this.lookupSeq) return; // superseded by a newer scan
     const range =
       result.matchLength > 0 ? rangeForLength(scanned, result.matchLength, this.doc) : null;
-    this.callbacks.onHit({ result, scanned, range });
+    let sentence: SentenceParts | null = null;
+    if (range) {
+      try {
+        sentence = extractSentence(range, this.doc);
+      } catch (err) {
+        console.warn('[Acetylcholine] sentence extraction failed', err);
+      }
+    }
+    this.callbacks.onHit({ result, scanned, range, sentence });
   }
 }
 

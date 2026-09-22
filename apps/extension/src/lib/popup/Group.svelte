@@ -5,6 +5,8 @@ import {
   type LookupGroup,
   type PopupProfileOptions,
 } from '@acetylcholine/shared';
+import type { AnkiControls } from '$lib/anki/controller.svelte';
+import AnkiButton from './AnkiButton.svelte';
 import DictionaryContent from './DictionaryContent.svelte';
 import ReadingsHeader from './ReadingsHeader.svelte';
 import ViaBadge from './ViaBadge.svelte';
@@ -14,13 +16,20 @@ interface Props {
   dictionaries: Map<string, DictionaryInfo>;
   options: PopupProfileOptions;
   onLookup: (term: string) => void;
+  anki?: AnkiControls;
 }
 
-let { group, dictionaries, options, onLookup }: Props = $props();
+let { group, dictionaries, options, onLookup, anki }: Props = $props();
 </script>
 
 <section class="ace-group">
-  <ReadingsHeader headwords={group.headwords} readings={group.readings} {options} />
+  <ReadingsHeader headwords={group.headwords} readings={group.readings} {options}>
+    {#snippet actions()}
+      {#if anki}
+        <AnkiButton state={anki.state} onAdd={anki.add} onView={anki.view} />
+      {/if}
+    {/snippet}
+  </ReadingsHeader>
 
   {#each group.entries as item (`${item.dictionary}:${item.entry.id}`)}
     {@const dictionary = dictionaries.get(item.dictionary)}

@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { LookupResult } from '@acetylcholine/shared';
+import type { LookupContext, LookupResult } from '@acetylcholine/shared';
 import { onMount } from 'svelte';
 import { Input } from '$lib/components/ui/input';
 import { sendBackground } from '$lib/messaging';
@@ -16,7 +16,9 @@ let loading = $state(false);
 let timer: ReturnType<typeof setTimeout> | null = null;
 let seq = 0;
 
-const options = $derived(popupOptionsFromProfile(settings.profile));
+const options = $derived(popupOptionsFromProfile(settings.profile, settings.current!));
+/** The search page has no host page: no sentence, no URL. */
+const context: LookupContext = { sentence: null, url: '', documentTitle: '' };
 
 async function search(text: string) {
   const mine = ++seq;
@@ -89,7 +91,7 @@ onMount(() => {
         {result.groups.length} result{result.groups.length === 1 ? '' : 's'} · {result.elapsed.toFixed(1)} ms
         {result.cached ? '(cached)' : ''}
       </div>
-      <Results {result} {options} onLookup={lookup} />
+      <Results {result} {options} {context} onLookup={lookup} />
     </div>
   {/if}
 </div>

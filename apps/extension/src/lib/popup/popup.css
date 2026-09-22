@@ -144,6 +144,50 @@
   color: color-mix(in oklch, currentColor 40%, #d97706);
 }
 
+/* Anki controls at the right end of the header line. */
+.ace-anki {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  font-size: 0.75em;
+  align-self: center;
+}
+
+.ace-anki-button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in oklch, currentColor 30%, transparent);
+  border-radius: 0.3rem;
+  padding: 0 0.4rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.ace-anki-button:hover {
+  background: color-mix(in oklch, currentColor 10%, transparent);
+}
+
+.ace-anki-status {
+  opacity: 0.7;
+}
+
+.ace-anki-done {
+  color: #16a34a;
+  opacity: 1;
+}
+
+.ace-anki-error {
+  color: #dc2626;
+  border-color: color-mix(in oklch, #dc2626 60%, transparent);
+}
+
+.ace-anki-muted {
+  opacity: 0.45;
+  cursor: help;
+}
+
 /* The host and its wrappers create no boxes: an inline dictionary root flows after the badges. */
 .ace-dictionary-content {
   display: contents;

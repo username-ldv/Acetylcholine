@@ -4,6 +4,7 @@
  */
 import {
   isPopupMessage,
+  type LookupContext,
   type LookupResult,
   type PopupInbound,
   type PopupOutbound,
@@ -61,10 +62,15 @@ export class PopupHost {
     }
   }
 
-  show(result: LookupResult, options: PopupProfileOptions, anchor: DOMRect): void {
+  show(
+    result: LookupResult,
+    options: PopupProfileOptions,
+    anchor: DOMRect,
+    context: LookupContext,
+  ): void {
     const frame = this.ensureFrame();
     this.anchor = anchor;
-    this.post({ type: 'acetylcholine:show', result, options });
+    this.post({ type: 'acetylcholine:show', result, options, context });
     frame.style.setProperty('display', 'block', 'important');
     this.visible = true;
     this.position(anchor);

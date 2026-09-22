@@ -40,11 +40,15 @@ export default defineContentScript({
       { scanning: profile.scanning, language: profile.language },
       {
         lookup: (text) => sendBackground({ type: 'lookup', text }),
-        onHit: ({ result, range }) => {
+        onHit: ({ result, range, sentence }) => {
           if (result.matchLength === 0 || !range) return;
           highlighter.show(range);
           const rect = range.getBoundingClientRect();
-          host.show(result, popupOptionsFromProfile(profile), rect);
+          host.show(result, popupOptionsFromProfile(profile, settings), rect, {
+            sentence,
+            url: location.href,
+            documentTitle: document.title,
+          });
         },
         onDismiss: () => {
           if (!host.isVisible) return;
@@ -81,7 +85,7 @@ export default defineContentScript({
         height: profile.popup.height,
         offset: profile.popup.offset,
       });
-      host.updateOptions(popupOptionsFromProfile(profile));
+      host.updateOptions(popupOptionsFromProfile(profile, settings));
     });
   },
 });

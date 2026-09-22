@@ -242,3 +242,71 @@ export function rangeForLength(
   }
   return r;
 }
+
+export interface SentenceParts {
+  prefix: string;
+  body: string;
+  suffix: string;
+}
+
+/** Sentence terminators; a Latin full stop only counts before whitespace or at the end. */
+const SENTENCE_END = /[。！？!?;；\n]|\.(?=\s|$)/;
+const SENTENCE_END_ALL = new RegExp(SENTENCE_END.source, 'g');
+/** Closing punctuation that stays attached to the sentence it ends. */
+const CLOSERS = /^[」』”’）)\]】》〉〕｝}]+/u;
+
+/** Text of a range with `<br>` rendered as a line break (`Range.toString()` drops it). */
+function rangeText(range: Range): string {
+  const fragment = range.cloneContents();
+  for (const br of fragment.querySelectorAll('br')) br.replaceWith('\n');
+  return fragment.textContent ?? '';
+}
+
+/**
+ * The sentence around a matched range, split into the text before the match, the match, and
+ * the text after it: from the last sentence terminator before the match (inside the same block)
+ * to the first one after it, closing quotes and brackets included. Whitespace is collapsed and
+ * each side is capped at `maxChars` characters, measured from the match outward.
+ */
+export function extractSentence(
+  range: Range,
+  doc: Document = document,
+  maxChars = 200,
+): SentenceParts {
+  const block = blockAncestor(range.startContainer) ?? doc.body;
+  const before = doc.createRange();
+  before.setStart(block, 0);
+  before.setEnd(range.startContainer, range.startOffset);
+  const after = doc.createRange();
+  after.setStart(range.endContainer, range.endOffset);
+  after.setEnd(block, block.childNodes.length);
+
+  let prefix = rangeText(before);
+  let suffix = rangeText(after);
+  const body = collapse(range.toString());
+
+  let cut = 0;
+  for (const m of prefix.matchAll(SENTENCE_END_ALL)) cut = m.index + m[0].length;
+  if (cut > 0) {
+    const closers = CLOSERS.exec(prefix.slice(cut));
+    if (closers) cut += closers[0].length;
+  }
+  prefix = collapse(prefix.slice(cut)).trimStart();
+
+  const end = SENTENCE_END.exec(suffix);
+  if (end) {
+    let stop = end.index + end[0].length;
+    const closers = CLOSERS.exec(suffix.slice(stop));
+    if (closers) stop += closers[0].length;
+    suffix = suffix.slice(0, stop);
+  }
+  suffix = collapse(suffix).trimEnd();
+
+  if (prefix.length > maxChars) prefix = prefix.slice(-maxChars);
+  if (suffix.length > maxChars) suffix = suffix.slice(0, maxChars);
+  return { prefix, body, suffix };
+}
+
+function collapse(text: string): string {
+  return text.replace(/\s+/g, ' ');
+}

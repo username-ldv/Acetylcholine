@@ -288,12 +288,50 @@ badges while 读书 (one pronunciation) shows none. The 规范词典 用法说�
       reading shown in the popup header; secondary readings shown smaller or hidden.
 - [ ] Backup: export/import settings JSON; export/import dictionary DB (as `.ace` again).
 
-### Phase 6 — Anki integration  `[ ]`
-- [ ] AnkiConnect client (optional host permission requested on enable), connection status.
-- [ ] Deck / note type / field mapping UI with markers (`{expression}`, `{reading}`, `{glossary}`,
-      `{sentence}`, `{dictionary}`, `{url}`, `{frequencies}`, …).
-- [ ] Popup buttons: add note; duplicate detection (`findNotes` per headword, cached);
-      "view note" opens Anki browser; tag notes.
+### Phase 6 — Anki integration  `[x]`
+- [x] AnkiConnect client (`lib/anki/client.ts`: API v6, one POST per action, 10 s timeout, typed
+      errors) and the background `AnkiService` (`lib/anki/service.ts`): connection status via
+      `requestPermission` (AnkiConnect answers that action for any origin and asks the user once
+      inside Anki for unknown ones), deck / note-type / field lists, duplicate check, media
+      upload, `addNote`, `guiBrowse`. Access: `optional_host_permissions` `http://*/*` and
+      `https://*/*` (Firefox: `host_permissions`), requested with `permissions.request` when the
+      integration is switched on; AnkiConnect's own CORS allow-list is the other half and is
+      enough by itself.
+- [x] Settings → Anki: enable switch (asks for the origin), URL + API key, connection test, deck
+      and note-type selects, one template input per field of the chosen note type with clickable
+      markers (`{expression}` `{headwords}` `{variants}` `{reading}` `{readings}`
+      `{reading:<tag>}` `{glossary}` `{glossary:<dictionary>}` `{glossary-text}` `{dictionary}`
+      `{dictionaries}` `{sentence}` `{cloze-prefix}` `{cloze-body}` `{cloze-suffix}` `{url}`
+      `{document-title}`; text markers are HTML-escaped, glossary markers are HTML), templates
+      suggested from field names, tags, duplicate check (collection / deck), allow duplicates,
+      glossary styling on/off. Marker expansion is pure and lives in `@acetylcholine/shared`
+      (`anki.ts`).
+- [x] Popup: every card (a group, or a word block in the by-dictionary layout) gets `+ Anki` at
+      the right of its header. On show the cards are checked against Anki (`findNotes` on the
+      note type's first field, cached 30 s): `✓ in Anki` + `view` (opens the Anki browser on the
+      notes), `+ Anki`, or a reason (first field empty); after adding, `✓ added` + `view`. The
+      glossary is rendered in the popup page (structured content and MDX HTML alike),
+      reading-tagged nodes of the other systems dropped, internal links flattened, images renamed
+      `ace-<dictionary>-<hash>-<name>` and stored with `storeMediaFile` before `addNote`. Each
+      dictionary's stylesheet (popup base rules + `styles.css`, `@font-face` dropped, every
+      selector confined to `.ace-glossary-entry[data-dictionary-id=…]` by `scopeCss`) is stored
+      once per session as `_ace-<dictionary>.css` and linked from the glossary, so definitions
+      look as in the popup without bloating notes. The sentence comes from the scanner (block
+      text cut at 。！？!?;； with closing quotes kept, `<br>` as a boundary), on web pages and
+      inside the popup alike.
+- [ ] `{frequencies}` / `{pitch}` markers wait for meta rendering (Phase 8); dictionary fonts are
+      not exported; screenshot / audio markers are not planned.
+
+**Checkpoint (met, 2026-09-22, `apps/extension/e2e/anki.ts` against the user's Anki with
+AnkiConnect 6, deck "Acetylcholine Test", note type "CN Mining"):** the settings page connects
+and lists decks and fields; Shift+hover on 读书 shows `+ Anki` on all three cards; one click adds
+the note in 50–225 ms (three stylesheets uploaded on the first add of a session) with Word 读书,
+Reading ㄉㄨˊㄕㄨ, Sentence 我喜欢<b>读书</b>，读书使人进步。, the glossary with one `<link>` per
+dictionary, and the page title + URL; a fresh hover shows `✓ in Anki` + `view`; 剑, already in
+another deck of the collection, is reported as a duplicate; 俎 added from the Search page carries
+its picture (`ace-mdx-…-125.PNG`, present in the media folder). Chrome needed no host permission
+in that run because AnkiConnect echoes the extension origin in its CORS headers; the client's
+`fetch` must be bound to `globalThis` (calling it as a method throws "Illegal invocation").
 
 ### Phase 7 — Web-request dictionaries  `[ ]`
 Web dictionaries are configured in the extension, not converted. They are also the way to use

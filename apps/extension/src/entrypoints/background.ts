@@ -4,6 +4,7 @@ import {
   type BackgroundRequest,
   type Settings,
 } from '@acetylcholine/shared';
+import { AnkiService } from '$lib/anki/service';
 import { LookupService } from '$lib/lookup-service';
 import { loadSettings, watchSettings } from '$lib/settings-store';
 
@@ -23,9 +24,11 @@ export default defineBackground(() => {
   watchSettings((next) => {
     settings = Promise.resolve(next);
     service.invalidateResults();
+    anki.invalidate();
   });
 
   const service = new LookupService(getSettings);
+  const anki = new AnkiService(getSettings);
 
   browser.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
@@ -52,6 +55,21 @@ export default defineBackground(() => {
         await browser.tabs.create({ url: target });
         return { ok: true };
       }
+      case 'anki:status':
+        return anki.status();
+      case 'anki:decks':
+        return anki.decks();
+      case 'anki:models':
+        return anki.models();
+      case 'anki:modelFields':
+        return anki.modelFields(message.model);
+      case 'anki:check':
+        return anki.check(message.notes);
+      case 'anki:add':
+        return anki.add(message.note, message.media);
+      case 'anki:view':
+        await anki.view(message.noteIds);
+        return { ok: true };
       default:
         throw new Error(`Unknown message type ${(message as { type: string }).type}`);
     }

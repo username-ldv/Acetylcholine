@@ -1,6 +1,9 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
+/** Origins the Anki integration may ask for (AnkiConnect is usually on 127.0.0.1:8765). */
+const ANKI_ORIGINS = ['http://*/*', 'https://*/*'];
+
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
@@ -21,11 +24,17 @@ export default defineConfig({
       prebundleSvelteLibraries: false,
     },
   },
-  manifest: {
+  manifest: ({ browser }) => ({
     name: 'Acetylcholine',
     description:
       'Pop-up dictionary for language learners: hover a word, read its definitions, send it to Anki.',
     permissions: ['storage', 'unlimitedStorage'],
+    // AnkiConnect (http://127.0.0.1:8765 by default, URL configurable): the origin is requested
+    // with `permissions.request` when Anki integration is switched on, never at install time.
+    // Firefox MV3 has no `optional_host_permissions`; its `host_permissions` are optional anyway.
+    ...(browser === 'firefox'
+      ? { host_permissions: ANKI_ORIGINS }
+      : { optional_host_permissions: ANKI_ORIGINS }),
     // The lookup popup page is loaded inside an iframe injected into web pages.
     web_accessible_resources: [
       {
@@ -33,7 +42,7 @@ export default defineConfig({
         matches: ['<all_urls>'],
       },
     ],
-  },
+  }),
   vite: () => ({
     plugins: [tailwindcss()],
     worker: { format: 'es' },

@@ -7,6 +7,8 @@ import {
   selectReadings,
   type WordBlock,
 } from '@acetylcholine/shared';
+import type { AnkiControls } from '$lib/anki/controller.svelte';
+import AnkiButton from './AnkiButton.svelte';
 import DictionaryContent from './DictionaryContent.svelte';
 import ReadingsHeader from './ReadingsHeader.svelte';
 import ViaBadge from './ViaBadge.svelte';
@@ -16,9 +18,10 @@ interface Props {
   dictionaries: Map<string, DictionaryInfo>;
   options: PopupProfileOptions;
   onLookup: (term: string) => void;
+  anki?: AnkiControls;
 }
 
-let { block, dictionaries, options, onLookup }: Props = $props();
+let { block, dictionaries, options, onLookup, anki }: Props = $props();
 
 /**
  * Reading badges disambiguate definitions of a word that has several pronunciations across the
@@ -37,7 +40,13 @@ function badge(readings: AceReading[]): string | null {
 </script>
 
 <section class="ace-word">
-  <ReadingsHeader headwords={block.headwords} readings={block.readings} {options} />
+  <ReadingsHeader headwords={block.headwords} readings={block.readings} {options}>
+    {#snippet actions()}
+      {#if anki}
+        <AnkiButton state={anki.state} onAdd={anki.add} onView={anki.view} />
+      {/if}
+    {/snippet}
+  </ReadingsHeader>
 
   {#each block.dictionaries as bucket (bucket.dictionary)}
     {@const dictionary = dictionaries.get(bucket.dictionary)}

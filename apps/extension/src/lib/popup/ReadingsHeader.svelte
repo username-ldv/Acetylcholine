@@ -1,14 +1,17 @@
 <script lang="ts">
 import type { AceReading } from '@acetylcholine/ace';
 import { type PopupProfileOptions, selectReadings } from '@acetylcholine/shared';
+import type { Snippet } from 'svelte';
 
 interface Props {
   headwords: string[];
   readings: AceReading[];
   options: PopupProfileOptions;
+  /** Controls rendered at the right end of the header (Anki buttons). */
+  actions?: Snippet;
 }
 
-let { headwords, readings, options }: Props = $props();
+let { headwords, readings, options, actions }: Props = $props();
 
 const selection = $derived(selectReadings(readings, options.readingTags));
 const canonical = $derived(headwords[0] ?? '');
@@ -44,5 +47,8 @@ const secondaryClass = $derived(
         {/each}
       {/if}
     </div>
+  {/if}
+  {#if actions}
+    {@render actions()}
   {/if}
 </header>

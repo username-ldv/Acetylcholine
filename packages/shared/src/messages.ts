@@ -6,6 +6,7 @@
  * - `PopupInbound` / `PopupOutbound`: content script ↔ popup iframe (`window.postMessage`).
  */
 
+import type { AnkiMediaFile, AnkiNoteData, LookupContext } from './anki.ts';
 import type { DictionaryInfo, LookupResult } from './lookup/types.ts';
 import type {
   Profile,
@@ -24,6 +25,25 @@ export interface LookupRequest {
   fresh?: boolean;
 }
 
+export interface AnkiStatus {
+  enabled: boolean;
+  /** Deck, note type and at least one field template are set. */
+  configured: boolean;
+  connected: boolean;
+  /** AnkiConnect API version. */
+  version?: number;
+  /** AnkiConnect's answer to `requestPermission` for this extension's origin. */
+  permission?: 'granted' | 'denied';
+  error?: string;
+}
+
+/** Whether one note can be added, and the existing notes it would duplicate. */
+export interface AnkiCheckResult {
+  canAdd: boolean;
+  noteIds: number[];
+  reason?: string;
+}
+
 export type BackgroundRequest =
   | { type: 'ping' }
   | LookupRequest
@@ -31,7 +51,15 @@ export type BackgroundRequest =
   /** Sent by the options page after an import/delete so caches are dropped. */
   | { type: 'dictionariesChanged' }
   | { type: 'getSettings' }
-  | { type: 'openOptions'; section?: string };
+  | { type: 'openOptions'; section?: string }
+  | { type: 'anki:status' }
+  | { type: 'anki:decks' }
+  | { type: 'anki:models' }
+  | { type: 'anki:modelFields'; model: string }
+  | { type: 'anki:check'; notes: AnkiNoteData[] }
+  | { type: 'anki:add'; note: AnkiNoteData; media: AnkiMediaFile[] }
+  /** Opens the Anki browser on the given notes. */
+  | { type: 'anki:view'; noteIds: number[] };
 
 export interface BackgroundResponses {
   ping: { at: number; version: string };
@@ -40,6 +68,13 @@ export interface BackgroundResponses {
   dictionariesChanged: { ok: true };
   getSettings: Settings;
   openOptions: { ok: true };
+  'anki:status': AnkiStatus;
+  'anki:decks': string[];
+  'anki:models': string[];
+  'anki:modelFields': string[];
+  'anki:check': AnkiCheckResult[];
+  'anki:add': { noteId: number };
+  'anki:view': { ok: true };
 }
 
 export type BackgroundResponse<T extends BackgroundRequest['type']> = BackgroundResponses[T];
@@ -73,10 +108,17 @@ export interface PopupProfileOptions {
   dictionaryOrder: string[];
   /** Scanning options, so the popup can scan its own content for nested lookups. */
   scanning: ScanningOptions;
+  /** Show the "add to Anki" controls. */
+  ankiEnabled: boolean;
 }
 
 export type PopupInbound =
-  | { type: 'acetylcholine:show'; result: LookupResult; options: PopupProfileOptions }
+  | {
+      type: 'acetylcholine:show';
+      result: LookupResult;
+      options: PopupProfileOptions;
+      context: LookupContext;
+    }
   | { type: 'acetylcholine:options'; options: PopupProfileOptions }
   | { type: 'acetylcholine:hidden' };
 

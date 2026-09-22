@@ -1,7 +1,7 @@
-import type { PopupProfileOptions, Profile } from '@acetylcholine/shared';
+import type { PopupProfileOptions, Profile, Settings } from '@acetylcholine/shared';
 
-/** The subset of a profile the popup needs to render results. */
-export function popupOptionsFromProfile(profile: Profile): PopupProfileOptions {
+/** The subset of the settings the popup needs to render results for `profile`. */
+export function popupOptionsFromProfile(profile: Profile, settings: Settings): PopupProfileOptions {
   const dictionaryCss: Record<string, string> = {};
   for (const pref of profile.dictionaries) {
     if (pref.customCss.trim().length > 0) dictionaryCss[pref.id] = pref.customCss;
@@ -17,5 +17,6 @@ export function popupOptionsFromProfile(profile: Profile): PopupProfileOptions {
     dictionaryCss,
     dictionaryOrder: profile.dictionaries.filter((d) => d.enabled).map((d) => d.id),
     scanning: profile.scanning,
+    ankiEnabled: settings.anki.enabled,
   };
 }

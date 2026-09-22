@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
   isPopupMessage,
+  type LookupContext,
   type LookupResult,
   type PopupInbound,
   type PopupOutbound,
@@ -12,8 +13,14 @@ import Results from '$lib/popup/Results.svelte';
 import { applyTheme } from '$lib/popup/theme';
 import { Scanner } from '$lib/scanner/scanner';
 
+/** One shown result together with where it came from. */
+interface Frame {
+  result: LookupResult;
+  context: LookupContext;
+}
+
 /** Stack of results; the last one is shown. Nested lookups push, "back" pops. */
-let stack = $state<LookupResult[]>([]);
+let stack = $state<Frame[]>([]);
 let options = $state<PopupProfileOptions | null>(null);
 let loading = $state(false);
 let scroller = $state<HTMLDivElement | null>(null);
@@ -26,9 +33,9 @@ function post(message: PopupOutbound): void {
   if (embedded) window.parent.postMessage(message, '*');
 }
 
-function show(result: LookupResult, opts: PopupProfileOptions): void {
+function show(result: LookupResult, opts: PopupProfileOptions, context: LookupContext): void {
   options = opts;
-  stack = [result];
+  stack = [{ result, context }];
   scrollTop();
 }
 
@@ -38,12 +45,21 @@ function scrollTop(): void {
   });
 }
 
+/** Context for a lookup started inside the popup: same page, the given sentence (if any). */
+function nestedContext(sentence: LookupContext['sentence']): LookupContext {
+  return {
+    sentence,
+    url: current?.context.url ?? '',
+    documentTitle: current?.context.documentTitle ?? '',
+  };
+}
+
 async function nestedLookup(term: string): Promise<void> {
   if (loading) return;
   loading = true;
   try {
     const result = await sendBackground({ type: 'lookup', text: term });
-    stack = [...stack, result];
+    stack = [...stack, { result, context: nestedContext(null) }];
     scrollTop();
   } catch (err) {
     console.warn('[Acetylcholine] nested lookup failed', err);
@@ -69,7 +85,7 @@ function onMessage(event: MessageEvent): void {
   const msg = event.data as PopupInbound;
   switch (msg.type) {
     case 'acetylcholine:show':
-      show(msg.result, msg.options);
+      show(msg.result, msg.options, msg.context);
       break;
     case 'acetylcholine:options':
       options = msg.options;
@@ -134,7 +150,7 @@ $effect(() => {
       lookup: (text) => sendBackground({ type: 'lookup', text }),
       onHit: (hit) => {
         if (hit.result.matchLength > 0) {
-          stack = [...stack, hit.result];
+          stack = [...stack, { result: hit.result, context: nestedContext(hit.sentence) }];
           scrollTop();
         }
       },
@@ -153,8 +169,13 @@ onMount(async () => {
   const settings = await sendBackground({ type: 'getSettings' });
   const { popupOptionsFromProfile } = await import('$lib/popup/options');
   const { getActiveProfile } = await import('@acetylcholine/shared');
-  options = popupOptionsFromProfile(getActiveProfile(settings));
-  if (q) stack = [await sendBackground({ type: 'lookup', text: q })];
+  options = popupOptionsFromProfile(getActiveProfile(settings), settings);
+  if (q) {
+    const result = await sendBackground({ type: 'lookup', text: q });
+    stack = [
+      { result, context: { sentence: null, url: location.href, documentTitle: document.title } },
+    ];
+  }
 });
 </script>
 
@@ -175,9 +196,9 @@ onMount(async () => {
     </button>
     <span class="flex-1 truncate">
       {#if current}
-        {current.groups.length} result{current.groups.length === 1 ? '' : 's'}
-        {#if current.elapsed >= 0}
-          · {current.elapsed.toFixed(0)} ms{current.cached ? ' (cached)' : ''}
+        {current.result.groups.length} result{current.result.groups.length === 1 ? '' : 's'}
+        {#if current.result.elapsed >= 0}
+          · {current.result.elapsed.toFixed(0)} ms{current.result.cached ? ' (cached)' : ''}
         {/if}
       {:else}
         Acetylcholine
@@ -200,7 +221,7 @@ onMount(async () => {
   </div>
   <div bind:this={scroller} class="min-h-0 flex-1 overflow-y-auto">
     {#if current && options}
-      <Results result={current} {options} onLookup={nestedLookup} />
+      <Results result={current.result} context={current.context} {options} onLookup={nestedLookup} />
     {:else}
       <p class="p-3 text-sm text-muted-foreground">Hover a word to look it up.</p>
     {/if}

@@ -3,6 +3,7 @@ import { ACETYLCHOLINE_NAME, ACETYLCHOLINE_VERSION } from '@acetylcholine/shared
 import { onMount, untrack } from 'svelte';
 import { applyTheme } from '$lib/popup/theme';
 import About from './sections/About.svelte';
+import Anki from './sections/Anki.svelte';
 import Appearance from './sections/Appearance.svelte';
 import Dictionaries from './sections/Dictionaries.svelte';
 import Scanning from './sections/Scanning.svelte';
@@ -13,6 +14,7 @@ const sections = [
   { id: 'dictionaries', label: 'Dictionaries' },
   { id: 'scanning', label: 'Scanning' },
   { id: 'appearance', label: 'Appearance' },
+  { id: 'anki', label: 'Anki' },
   { id: 'search', label: 'Search' },
   { id: 'about', label: 'About' },
 ] as const;
@@ -100,6 +102,8 @@ $effect(() => {
       <Scanning {settings} />
     {:else if section === 'appearance'}
       <Appearance {settings} />
+    {:else if section === 'anki'}
+      <Anki {settings} />
     {:else if section === 'search'}
       <Search {settings} />
     {:else}

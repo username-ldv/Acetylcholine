@@ -109,12 +109,23 @@ export type Profile = z.infer<typeof profileSchema>;
 export const ankiSchema = z.object({
   enabled: z.boolean().default(false),
   url: z.string().default('http://127.0.0.1:8765'),
+  /** AnkiConnect API key (`apiKey` in its config); empty when none is required. */
   key: z.string().default(''),
   deck: z.string().default(''),
   model: z.string().default(''),
+  /** Note-type field → template with `{markers}` (see `ANKI_MARKERS`). */
   fields: z.record(z.string(), z.string()).default({}),
   tags: z.array(z.string()).default(['acetylcholine']),
+  /** Look for existing notes with the same first field before offering to add. */
+  checkDuplicates: z.boolean().default(true),
   duplicateScope: z.enum(['collection', 'deck']).default('collection'),
+  /** Add the note even when a duplicate exists. */
+  allowDuplicates: z.boolean().default(false),
+  /**
+   * Store each dictionary's stylesheet once in Anki's media folder (`_ace-<dictionary>.css`,
+   * scoped to the glossary) and link it from `{glossary}`, so definitions look as in the popup.
+   */
+  glossaryStyles: z.boolean().default(true),
 });
 export type AnkiOptions = z.infer<typeof ankiSchema>;
 
